@@ -1,0 +1,11 @@
+{
+    "name": "igcinfo",
+    "description": "An online service to browse information about IGC files",
+    "keywords": [
+        "go",
+        "igc",
+        "REST"
+    ],
+    "website": "https://github.com/barskern/igcinfo",
+    "repository": "https://github.com/barskern/igcinfo"
+}

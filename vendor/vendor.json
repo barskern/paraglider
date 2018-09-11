@@ -1,0 +1,9 @@
+{
+    "comment": "",
+    "ignore": "test",
+    "package": [],
+    "rootPath": "github.com/barskern/igcinfo",
+    "heroku": {
+        "goVersion": "go1.11"
+    }
+}
