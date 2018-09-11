@@ -7,14 +7,14 @@ import (
 )
 
 func TestHelloWorld(t *testing.T) {
-	// Expected return value from `hello_world` handler
+	// Expected return value from `helloWorld` handler
 	expt := []byte("Hello world")
 
 	// Create a fake ResponseRecorder
 	res := httptest.NewRecorder()
 
 	// Pass the fake recorder to the handler
-	hello_world(res, nil)
+	helloWorld(res, nil)
 
 	// Allocate a bytebuffer to fit the return value
 	body := make([]byte, len(expt))
