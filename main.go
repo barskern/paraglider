@@ -18,6 +18,7 @@ func helloWorld(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Get port from environment
 	port, ok := os.LookupEnv("PORT")
 	if !ok {
 		port = "8080"
