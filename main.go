@@ -7,16 +7,6 @@ import (
 	"os"
 )
 
-func helloWorld(w http.ResponseWriter, r *http.Request) {
-	// Make sure request isn't nil before accessing fields
-	if r != nil {
-		log.Printf("Recived a %s-request from %s for %s", r.Method, r.URL, r.RemoteAddr)
-	} else {
-		log.Printf("Recived a request which is nil")
-	}
-	fmt.Fprintf(w, "Hello world")
-}
-
 func main() {
 	// Get port from environment
 	port, ok := os.LookupEnv("PORT")
@@ -24,8 +14,8 @@ func main() {
 		port = "8080"
 	}
 
-	log.Print("Adding `helloWorld` handler to root path")
-	http.HandleFunc("/", helloWorld)
+	log.Printf("Add handler for `/api`")
+	http.HandleFunc("/api", MetaHandler)
 
 	log.Printf("Setting up server to listen at port %s", port)
 

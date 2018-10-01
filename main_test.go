@@ -1,31 +1,36 @@
 package main
 
 import (
-	"bytes"
+	"encoding/json"
 	"net/http/httptest"
 	"testing"
 )
 
-func TestHelloWorld(t *testing.T) {
-	// Expected return value from `helloWorld` handler
-	expt := []byte("Hello world")
-
-	// Create a fake ResponseRecorder
+// Test GET /api/igc
+//
+// Should result in:
+// {
+//   "uptime": <uptime>
+//   "info": "Service for IGC tracks."
+//   "version": "v1"
+// }
+func TestMetaHandler(t *testing.T) {
+	req := httptest.NewRequest("GET", "/api", nil)
 	res := httptest.NewRecorder()
 
-	// Pass the fake recorder to the handler
-	helloWorld(res, nil)
+	MetaHandler(res, req)
 
-	// Allocate a bytebuffer to fit the return value
-	body := make([]byte, len(expt))
-
-	// Read the value of the buffer
-	res.Result().Body.Read(body)
-
-	t.Logf("Comparing \"%s\" to \"%s\"", expt, body)
-
-	// Compare the expected and actual output
-	if !bytes.Equal(body, expt) {
-		t.Errorf("Expected \"%s\" but got \"%s\"", expt, body)
+	var data map[string]interface{}
+	if err := json.Unmarshal(res.Body.Bytes(), &data); err != nil {
+		t.Errorf("failed when trying to decode body as json: %s", res.Body)
+	}
+	if data["uptime"] == nil {
+		t.Errorf("recived response: %s\ncontents of \"uptime\" does not exist", res.Body)
+	}
+	if data["info"] != "Service for IGC tracks." {
+		t.Errorf("recived response: %s\nfailed when checking contents of \"info\", got: %s", res.Body, data["info"])
+	}
+	if data["version"] != "v1" {
+		t.Errorf("recived response: %s\nfailed when checking contents of \"version\", got: %s", res.Body, data["version"])
 	}
 }
