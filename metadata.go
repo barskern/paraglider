@@ -2,50 +2,43 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
 )
 
-var DEFAULT_METADATA metadata
-var STARTUP_TIME time.Time
+// startupTime contains the time the application started running
+var startupTime time.Time
 
-// Initializes STARTUP_TIME so that `Uptime` can be calculated
+// Initializes `startupTime` so that we can later calculate uptime
 func init() {
-	STARTUP_TIME = time.Now()
-	DEFAULT_METADATA = metadata{0, "Service for IGC tracks.", "v1"}
+	startupTime = time.Now()
 }
 
-// Contains the metadata which is sent back to the user when requesting `/api`
+// metadata encodes the structure of metadata
 type metadata struct {
-	Uptime  JsonDuration `json:"uptime"`
-	Info    string       `json:"info"`
-	Version string       `json:"version"`
+	Uptime  ISO8601Duration `json:"uptime"`
+	Info    string          `json:"info"`
+	Version string          `json:"version"`
 }
 
-// Return metadata about the api endpoint
+// MetaHandler returns the metadata about the api endpoint in the following
+// structure
 //
-// Should be in the following format:
+// ```json
 // {
 //   "uptime": <uptime>
 //   "info": "Service for IGC tracks."
 //   "version": "v1"
 // }
-func MetaHandler(w http.ResponseWriter, r *http.Request) {
-	// Make local metadata
-	metadata := DEFAULT_METADATA
-	// Update uptime for local metadata
-	metadata.Uptime = JsonDuration(time.Since(STARTUP_TIME))
-	log.Printf("sending metadata")
-	// Encode metadata as response
+// ```
+func MetaHandler(w http.ResponseWriter, _ *http.Request) {
+	// Make local metadata with current uptime
+	uptime := ISO8601Duration(time.Since(startupTime))
+	metadata := metadata{uptime, "Service for IGC tracks.", "v1"}
+
+	log.Printf("responing to request for metadata")
+
+	// Encode metadata as a JSON object
 	json.NewEncoder(w).Encode(metadata)
-}
-
-type JsonDuration time.Duration
-
-func (t JsonDuration) MarshalJSON() ([]byte, error) {
-	d := time.Duration(t)
-	dur_str := fmt.Sprintf("\"P%dY%dM%dDT%dH%dM%dS\"", 0, 0, 0, int(d.Hours()), int(d.Minutes()), int(d.Seconds()))
-	return []byte(dur_str), nil
 }
