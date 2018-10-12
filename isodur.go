@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	log "github.com/sirupsen/logrus"
 	"strconv"
 	"time"
 )
@@ -91,5 +92,10 @@ func (t ISO8601Duration) MarshalText() ([]byte, error) {
 			hasElements = true
 		}
 	}
+
+	log.WithFields(log.Fields{
+		"input":  d,
+		"result": buffer.String(),
+	}).Debug("converted time to ISO8601")
 	return buffer.Bytes(), nil
 }
