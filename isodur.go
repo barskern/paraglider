@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const daysInMonth = 30.415875
+
 // ISO8601Duration is wrapper for `time.Duration` which implements
 // `MarshalText` to render the duration as a ISO8601 compilant duration
 type ISO8601Duration time.Duration
@@ -21,7 +23,8 @@ type ISO8601Duration time.Duration
 func (t ISO8601Duration) MarshalText() ([]byte, error) {
 	d := time.Duration(t)
 
-	days := int(d.Hours() / 24)
+	days := d.Hours() / 24
+	months := days / daysInMonth
 
 	// Two constant-sized arrays which contain the postfix and the value of a
 	// ISO8601 duration element
@@ -36,14 +39,9 @@ func (t ISO8601Duration) MarshalText() ([]byte, error) {
 		postfix rune
 		value   int
 	}{
-		{'Y', int(days/365) % 365},
-		// TODO take a stance on the use of months because a month does not
-		// have a uniform size (can be 28,29,30,31). This results in displaying
-		// the wrong days based on year, e.g. the time that should be P1Y1D
-		// turns into P1Y11M24D if months are defined as 31 days (with the
-		// current implementation)
-		//{'M', int(days/31) % 12},
-		{'D', days % 365},
+		{'Y', int(months / 12)},
+		{'M', int(months) % 12},
+		{'D', int(days) % 365 % 31},
 	}
 	var times = [...]struct {
 		postfix rune
