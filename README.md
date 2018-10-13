@@ -16,7 +16,7 @@ The system must be deployed on either Heroku or Google App Engine, and the Go so
 # API-endpoints
 
 - [X] `GET /api`
-- [ ] `GET /api/igc`
+- [X] `GET /api/igc`
 - [X] `POST /api/igc`
 - [ ] `GET /api/igc/<id>`
 - [ ] `GET /api/igc/<id>/<field>`

@@ -39,6 +39,9 @@ func (server *IgcServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case "/":
 			logger.Info("forwared request to metadata handler")
 			server.metaHandler(logger, w, r)
+		case "/igc":
+			logger.Info("forwared request to track get all handler")
+			server.trackGetAllHandler(logger, w, r)
 		default:
 			logger.Info("path not found, responding with 404 (not found)")
 			http.NotFound(w, r)
@@ -158,4 +161,15 @@ func (server *IgcServer) trackRegHandler(logger *log.Entry, w http.ResponseWrite
 // TrackRegRequest is the format of a track registration request
 type TrackRegRequest struct {
 	URLstr string `json:"url"`
+}
+
+// trackGetAllHandler returns all ids of registered igc files in the structure
+//
+// ```json
+// [ <id1>, <id2>, ... ]
+// ```
+func (server *IgcServer) trackGetAllHandler(logger *log.Entry, w http.ResponseWriter, _ *http.Request) {
+	ids := server.Data.GetAllIDs()
+	logger.WithField("ids", ids).Info("responding to request with all ids")
+	json.NewEncoder(w).Encode(ids)
 }
