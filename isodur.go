@@ -94,6 +94,6 @@ func (t ISO8601Duration) MarshalText() ([]byte, error) {
 	log.WithFields(log.Fields{
 		"input":  d,
 		"result": buffer.String(),
-	}).Debug("converted time to ISO8601")
+	}).Debug("converted duration to ISO8601")
 	return buffer.Bytes(), nil
 }

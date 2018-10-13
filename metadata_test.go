@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// Test GET /api
+// Test metadata handler
 //
 // Should result in JSON object with the following structure:
 //

@@ -34,11 +34,11 @@ func main() {
 	}).Info("Setting up server to listen at port")
 
 	// Run the server
-	// This will block the current thread
-	err := http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
+	// This funciton will block the current thread
+	err := http.ListenAndServe(":"+port, nil)
 
 	// We will only get to this statement if the server unexpectedly crashes
 	log.WithFields(log.Fields{
 		"cause": err,
-	}).Fatal("Server error occured")
+	}).Fatal("server error occured")
 }
