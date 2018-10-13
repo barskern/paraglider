@@ -22,7 +22,7 @@ func TestISO8601DurationTimes(t *testing.T) {
 
 	for _, v := range tests {
 		// Convert to nanoseconds
-		res := FormatAsISO8601(time.Duration(v.secs * 1000000000))
+		res := FormatAsISO8601(time.Duration(v.secs) * time.Second)
 		if string(res) != v.expt {
 			t.Errorf("expected '%s' but got '%s'", v.expt, res)
 		}
@@ -51,7 +51,7 @@ func TestISO8601DurationDates(t *testing.T) {
 
 	for _, v := range tests {
 		// Convert to nanoseconds
-		res := FormatAsISO8601(time.Duration(v.days * 24 * 60 * 60 * 1000000000))
+		res := FormatAsISO8601(time.Duration(v.days*24) * time.Hour)
 		if string(res) != v.expt {
 			t.Errorf("expected '%s' but got '%s'", v.expt, res)
 		}
@@ -79,7 +79,7 @@ func TestISO8601DurationDatesWithTimes(t *testing.T) {
 
 	for _, v := range tests {
 		// Convert to nanoseconds
-		res := FormatAsISO8601(time.Duration((v.secs + v.days*24*60*60) * 1000000000))
+		res := FormatAsISO8601(time.Duration(v.secs)*time.Second + time.Duration(v.days*24)*time.Hour)
 		if string(res) != v.expt {
 			t.Errorf("expected '%s' but got '%s'", v.expt, res)
 		}
