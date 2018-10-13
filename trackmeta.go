@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"github.com/marni/goigc"
 	"math/rand"
 	"sync"
@@ -12,9 +13,11 @@ type TrackID string
 
 // NewTrackID creates a new unique track ID
 func NewTrackID() TrackID {
-	id := [8]byte{}
+	var id [6]byte
 	rand.Read(id[:])
-	return TrackID(string(id[:]))
+	// Encode random bytes as a base64 string so that it only uses valid ascii
+	// characters (this is to make ids "pretty" in the url)
+	return TrackID(base64.StdEncoding.EncodeToString(id[:]))
 }
 
 // TrackMeta contains a subset of metainformation about a igc-track
