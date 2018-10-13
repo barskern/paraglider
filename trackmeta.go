@@ -85,3 +85,13 @@ func (metas *TrackMetas) Append(meta TrackMeta) TrackID {
 	return id
 }
 
+// GetAllIDs fetches all the stored ids
+func (metas *TrackMetas) GetAllIDs() []TrackID {
+	metas.RLock()
+	defer metas.RUnlock()
+	keys := make([]TrackID, 0, len(metas.data))
+	for k := range metas.data {
+		keys = append(keys, k)
+	}
+	return keys
+}
