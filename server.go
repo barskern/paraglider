@@ -33,7 +33,7 @@ func (server *IgcServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		switch r.URL.Path {
-		case "", "/":
+		case "/":
 			reqLog.Info("forwared request to metadata handler")
 			server.metaHandler(w, r)
 		default:

@@ -38,7 +38,7 @@ func main() {
 	//
 	// Remove the `/api/` so that the server can handle requests directly
 	// without caring about the api-point its mounted on
-	http.Handle("/api/", http.StripPrefix("/api/", &igcServer))
+	http.Handle("/api/", http.StripPrefix("/api", &igcServer))
 
 	// Run the server
 	// This funciton will block the current thread
