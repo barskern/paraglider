@@ -26,12 +26,19 @@ func main() {
 		port = "8080"
 	}
 
-	log.Info("Add handler for `/api`")
-	http.HandleFunc("/api", MetaHandler)
-
 	log.WithFields(log.Fields{
-		"value": port,
-	}).Info("Setting up server to listen at port")
+		"port":     port,
+		"logLevel": log.GetLevel(),
+	}).Info("initializing server")
+
+	// Create a new server which encompasses all server state
+	igcServer := NewIgcServer()
+
+	// Route all requests to `/api/` to the igc-server
+	//
+	// Remove the `/api/` so that the server can handle requests directly
+	// without caring about the api-point its mounted on
+	http.Handle("/api/", http.StripPrefix("/api/", &igcServer))
 
 	// Run the server
 	// This funciton will block the current thread
