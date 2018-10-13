@@ -1,13 +1,20 @@
 package main
 
 import (
+	"math/rand"
 	"sync"
 	"time"
 )
 
 // A unique id for a track
-// TODO give a meaningful type, perhaps a generated uuid
-type trackID int
+type trackID string
+
+// NewTrackID creates a new unique track ID
+func NewTrackID() string {
+	id := [8]byte{}
+	rand.Read(id[:])
+	return string(id[:])
+}
 
 // TrackMeta contains a subset of metainformation about a igc-track
 //
