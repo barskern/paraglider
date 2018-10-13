@@ -7,22 +7,17 @@ import (
 	"time"
 )
 
+// Defines how many days are in a month (approximatly 365 / 12)
 const daysInMonth = 30.415875
 
-// ISO8601Duration is wrapper for `time.Duration` which implements
-// `MarshalText` to render the duration as a ISO8601 compilant duration
-type ISO8601Duration time.Duration
-
-// MarshalText converts a duration into a ISO8601 compliant duration
+// FormatAsISO8601 converts a duration into a ISO8601 compliant bytestring
 //
-// It will use the least amout of neccessary terms, so if the duration is 5
+// It will use the least amount of neccessary terms, so if the duration is 5
 // seconds, this function will return `PT5S`.
 //
-// The error is always `nil`. The only way this function can fail is if the
-// underlaying `bytes.Buffer` panics, which can happen if it becomes to large.
-func (t ISO8601Duration) MarshalText() ([]byte, error) {
-	d := time.Duration(t)
-
+// The only way this function can fail is if the underlaying `bytes.Buffer`
+// panics, which can happen if it becomes to large.
+func FormatAsISO8601(d time.Duration) string {
 	days := d.Hours() / 24
 	months := days / daysInMonth
 
@@ -95,5 +90,6 @@ func (t ISO8601Duration) MarshalText() ([]byte, error) {
 		"input":  d,
 		"result": buffer.String(),
 	}).Debug("converted duration to ISO8601")
-	return buffer.Bytes(), nil
+
+	return buffer.String()
 }
