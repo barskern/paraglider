@@ -7,14 +7,14 @@ import (
 	"time"
 )
 
-// A unique id for a track
-type trackID string
+// TrackID is a unique id for a track
+type TrackID string
 
 // NewTrackID creates a new unique track ID
-func NewTrackID() string {
+func NewTrackID() TrackID {
 	id := [8]byte{}
 	rand.Read(id[:])
-	return string(id[:])
+	return TrackID(string(id[:]))
 }
 
 // TrackMeta contains a subset of metainformation about a igc-track
@@ -59,13 +59,28 @@ func TrackMetaFrom(track igc.Track) TrackMeta {
 // by a RWMutex and indexed by a unique id
 type TrackMetas struct {
 	mu   sync.RWMutex
-	data map[trackID]TrackMeta
+	data map[TrackID]TrackMeta
 }
 
-// TODO implement a read and write function which returns the map and the mutex
-// after locking
+// Get fetches the track meta of a specific id if it exists
+func (metas *TrackMetas) Get(id TrackID) (TrackMeta, bool) {
+	metas.mu.RLock()
+	defer metas.mu.RUnlock()
+	v, ok := metas.data[id]
+	return v, ok
+}
+
+// Append appends a track meta and returns the given id
+func (metas *TrackMetas) Append(meta TrackMeta) TrackID {
+	// TODO perhaps check that id doesnt already exist?
+	id := NewTrackID()
+	metas.mu.Lock()
+	defer metas.mu.Unlock()
+	metas.data[id] = meta
+	return id
+}
 
 // NewTrackMetas creates a new mutex and mapping from ID to TrackMeta
 func NewTrackMetas() TrackMetas {
-	return TrackMetas{sync.RWMutex{}, make(map[trackID]TrackMeta)}
+	return TrackMetas{sync.RWMutex{}, make(map[TrackID]TrackMeta)}
 }
