@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/marni/goigc"
 	"math/rand"
 	"sync"
 	"time"
@@ -35,8 +36,24 @@ type TrackMeta struct {
 	TrackLength float64   `json:"track_length"`
 }
 
-// TODO make function which converts a igc.Track into a TrackMeta struct.
-// See https://godoc.org/github.com/marni/goigc#Track
+// calcTotalDistance returns the total distance between the points in order
+func calcTotalDistance(points []igc.Point) (trackLength float64) {
+	for i, p := range points {
+		trackLength += p.Distance(points[i+1])
+	}
+	return
+}
+
+// TrackMetaFrom converts a igc.Track into a TrackMeta struct
+func TrackMetaFrom(track igc.Track) TrackMeta {
+	return TrackMeta{
+		track.Date,
+		track.Pilot,
+		track.GliderType,
+		track.GliderID,
+		calcTotalDistance(track.Points),
+	}
+}
 
 // TrackMetas contains a map to many TrackMeta objects which are protected
 // by a RWMutex and indexed by a unique id
