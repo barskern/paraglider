@@ -38,8 +38,8 @@ type TrackMeta struct {
 
 // calcTotalDistance returns the total distance between the points in order
 func calcTotalDistance(points []igc.Point) (trackLength float64) {
-	for i, p := range points {
-		trackLength += p.Distance(points[i+1])
+	for i := 0; i+1 < len(points); i++ {
+		trackLength += points[i].Distance(points[i+1])
 	}
 	return
 }
