@@ -58,14 +58,19 @@ func TrackMetaFrom(track igc.Track) TrackMeta {
 // TrackMetas contains a map to many TrackMeta objects which are protected
 // by a RWMutex and indexed by a unique id
 type TrackMetas struct {
-	mu   sync.RWMutex
+	sync.RWMutex
 	data map[TrackID]TrackMeta
+}
+
+// NewTrackMetas creates a new mutex and mapping from ID to TrackMeta
+func NewTrackMetas() TrackMetas {
+	return TrackMetas{sync.RWMutex{}, make(map[TrackID]TrackMeta)}
 }
 
 // Get fetches the track meta of a specific id if it exists
 func (metas *TrackMetas) Get(id TrackID) (TrackMeta, bool) {
-	metas.mu.RLock()
-	defer metas.mu.RUnlock()
+	metas.RLock()
+	defer metas.RUnlock()
 	v, ok := metas.data[id]
 	return v, ok
 }
@@ -74,13 +79,9 @@ func (metas *TrackMetas) Get(id TrackID) (TrackMeta, bool) {
 func (metas *TrackMetas) Append(meta TrackMeta) TrackID {
 	// TODO perhaps check that id doesnt already exist?
 	id := NewTrackID()
-	metas.mu.Lock()
-	defer metas.mu.Unlock()
+	metas.Lock()
+	defer metas.Unlock()
 	metas.data[id] = meta
 	return id
 }
 
-// NewTrackMetas creates a new mutex and mapping from ID to TrackMeta
-func NewTrackMetas() TrackMetas {
-	return TrackMetas{sync.RWMutex{}, make(map[TrackID]TrackMeta)}
-}
