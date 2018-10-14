@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -259,24 +260,23 @@ func (server *IgcServer) trackGetFieldHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	enc := json.NewEncoder(w)
 	flog := idlog.WithField("field", field)
 	switch field {
 	case "H_date":
 		flog.Info("responding with track date")
-		enc.Encode(meta.Date)
+		w.Write([]byte(meta.Date.Format(time.RFC3339)))
 	case "pilot":
 		flog.Info("responding with track pilot")
-		enc.Encode(meta.Pilot)
+		w.Write([]byte(meta.Pilot))
 	case "glider":
 		flog.Info("responding with track glider")
-		enc.Encode(meta.Glider)
+		w.Write([]byte(meta.Glider))
 	case "glider_id":
 		flog.Info("responding with track glider id")
-		enc.Encode(meta.GliderID)
+		w.Write([]byte(meta.GliderID))
 	case "track_length":
 		flog.Info("responding with track length")
-		enc.Encode(meta.TrackLength)
+		w.Write([]byte(strconv.FormatFloat(meta.TrackLength, 'f', -1, 64)))
 	default:
 		flog.Info("unable to find field of metadata")
 		http.Error(w, "invalid field", http.StatusBadRequest)
