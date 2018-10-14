@@ -11,6 +11,11 @@ import (
 // TrackID is a unique id for a track
 type TrackID string
 
+func init() {
+	// Seed randomness to make it more random
+	rand.Seed(time.Now().UnixNano())
+}
+
 // NewTrackID creates a new unique track ID
 func NewTrackID() TrackID {
 	var id [6]byte
@@ -80,7 +85,6 @@ func (metas *TrackMetas) Get(id TrackID) (TrackMeta, bool) {
 
 // Append appends a track meta and returns the given id
 func (metas *TrackMetas) Append(meta TrackMeta) TrackID {
-	// TODO perhaps check that id doesnt already exist?
 	id := NewTrackID()
 	metas.Lock()
 	defer metas.Unlock()
