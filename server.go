@@ -2,66 +2,84 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"github.com/marni/goigc"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
-// Methods the server will handle
-var allowedMethods = [...]string{http.MethodPost, http.MethodGet}
-
 // IgcServer distributes request to a pool of worker gorutines
 type IgcServer struct {
-	StartupTime time.Time
-	Data        TrackMetas
+	startupTime time.Time
+	data        TrackMetas
+	router      *mux.Router
 }
 
 // NewIgcServer creates a new server which handles requests to the igc api
-func NewIgcServer() IgcServer {
-	return IgcServer{time.Now(), NewTrackMetas()}
+func NewIgcServer() (srv IgcServer) {
+	srv = IgcServer{
+		time.Now(),
+		NewTrackMetas(),
+		mux.NewRouter(),
+	}
+	srv.router.HandleFunc("/", srv.metaHandler).Methods(http.MethodGet)
+	srv.router.HandleFunc("/igc", srv.trackRegHandler).Methods(http.MethodPost)
+	srv.router.HandleFunc("/igc", srv.trackGetAllHandler).Methods(http.MethodGet)
+
+	srv.router.HandleFunc(
+		"/igc/{id:[A-Za-z0-9+/]{8}}",
+		srv.trackGetHandler,
+	).Methods(http.MethodGet)
+
+	srv.router.HandleFunc(
+		"/igc/{id:[A-Za-z0-9+/]{8}}/{field:[a-zA-Z0-9_-]+}",
+		srv.trackGetFieldHandler,
+	).Methods(http.MethodGet)
+
+	srv.router.Use(loggingMiddleware)
+
+	srv.router.MethodNotAllowedHandler =
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger := newReqLogger(r)
+			logger.Info("recieved request with disallowed method")
+
+			// A 405 MUST generate "Allow" header in the header (rfc 7231 6.5.5)
+			w.Header().Add("Allow", "GET POST")
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		})
+
+	srv.router.NotFoundHandler =
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger := newReqLogger(r)
+			logger.Info("recieved request which didn't match any paths")
+
+			http.Error(w, "content not found", http.StatusNotFound)
+		})
+
+	return
 }
 
 func (server *IgcServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	logger := log.WithFields(log.Fields{
+	server.router.ServeHTTP(w, r)
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger := newReqLogger(r)
+		logger.Info("received request")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func newReqLogger(r *http.Request) *log.Entry {
+	return log.WithFields(log.Fields{
 		"method": r.Method,
 		"path":   r.URL.Path,
 		"addr":   r.RemoteAddr,
 	})
-
-	logger.Info("processing request")
-	switch r.Method {
-	case http.MethodGet:
-		switch r.URL.Path {
-		case "/":
-			logger.Info("forwared request to metadata handler")
-			server.metaHandler(logger, w, r)
-		case "/igc":
-			logger.Info("forwared request to track get all handler")
-			server.trackGetAllHandler(logger, w, r)
-		default:
-			logger.Info("path not found, responding with 404 (not found)")
-			http.NotFound(w, r)
-		}
-	case http.MethodPost:
-		switch r.URL.Path {
-		case "/igc":
-			logger.Info("forwared request to track registration handler")
-			server.trackRegHandler(logger, w, r)
-		default:
-			logger.Info("path not found, responding with 404 (not found)")
-			http.NotFound(w, r)
-		}
-	default:
-		logger.Info("invalid method, responding with 405 (status method not allowed)")
-		// A 405 response MUST generate an 'Allow' header which specifies the
-		// methods that are valid (RFC7231 6.5.5)
-		w.Header().Add("Allow", strings.Join(allowedMethods[:], " "))
-		http.Error(w, "status method is not allowed", http.StatusMethodNotAllowed)
-	}
 }
 
 // metaHandler returns the metadata about the api endpoint in the following
@@ -74,9 +92,11 @@ func (server *IgcServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //   "version": "v1"
 // }
 // ```
-func (server *IgcServer) metaHandler(logger *log.Entry, w http.ResponseWriter, _ *http.Request) {
+func (server *IgcServer) metaHandler(w http.ResponseWriter, r *http.Request) {
+	logger := newReqLogger(r)
+
 	metadata := map[string]interface{}{
-		"uptime":  FormatAsISO8601(time.Since(server.StartupTime)),
+		"uptime":  FormatAsISO8601(time.Since(server.startupTime)),
 		"info":    "Service for IGC tracks.",
 		"version": "v1",
 	}
@@ -104,7 +124,11 @@ func (server *IgcServer) metaHandler(logger *log.Entry, w http.ResponseWriter, _
 // }
 // ```
 // FIXME errors are handled gracefully but verbosly, is there a better way?
-func (server *IgcServer) trackRegHandler(logger *log.Entry, w http.ResponseWriter, r *http.Request) {
+func (server *IgcServer) trackRegHandler(w http.ResponseWriter, r *http.Request) {
+	logger := newReqLogger(r)
+
+	logger.Info("processing request to register track")
+
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 
@@ -144,7 +168,7 @@ func (server *IgcServer) trackRegHandler(logger *log.Entry, w http.ResponseWrite
 
 	// Create and add new trackmeta object
 	trackMeta := TrackMetaFrom(track)
-	id := server.Data.Append(trackMeta)
+	id := server.data.Append(trackMeta)
 
 	result := map[string]interface{}{
 		"id": id,
@@ -168,8 +192,93 @@ type TrackRegRequest struct {
 // ```json
 // [ <id1>, <id2>, ... ]
 // ```
-func (server *IgcServer) trackGetAllHandler(logger *log.Entry, w http.ResponseWriter, _ *http.Request) {
-	ids := server.Data.GetAllIDs()
+func (server *IgcServer) trackGetAllHandler(w http.ResponseWriter, r *http.Request) {
+	logger := newReqLogger(r)
+
+	ids := server.data.GetAllIDs()
 	logger.WithField("ids", ids).Info("responding to request with all ids")
 	json.NewEncoder(w).Encode(ids)
+}
+
+// trackGetHandler should return the fields of a specific id in the structure
+//
+// ```json
+// {
+//   "H_date": <date from File Header, H-record>,
+//   "pilot": <pilot>,
+//   "glider": <glider>,
+//   "glider_id": <glider_id>,
+//   "track_length": <calculated total track length>
+// }
+//```
+func (server *IgcServer) trackGetHandler(w http.ResponseWriter, r *http.Request) {
+	logger := newReqLogger(r)
+
+	vars := mux.Vars(r)
+	id, ok := vars["id"]
+	if !ok {
+		logger.Info("unable to find id in vars of request")
+		http.Error(w, "invalid or missing id", http.StatusBadRequest)
+		return
+	}
+	meta, ok := server.data.Get(TrackID(id))
+	if !ok {
+		logger.WithField("id", id).Info("unable to find metadata of id")
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	logger.WithFields(log.Fields{
+		"trackmeta": meta,
+		"id":        id,
+	}).Info("responding with track meta for given id")
+	json.NewEncoder(w).Encode(meta)
+}
+
+// trackGetFieldHandler should return the field specified in the url
+func (server *IgcServer) trackGetFieldHandler(w http.ResponseWriter, r *http.Request) {
+	logger := newReqLogger(r)
+
+	vars := mux.Vars(r)
+	id, ok := vars["id"]
+	if !ok {
+		logger.Info("unable to find id in vars of request")
+		http.Error(w, "invalid or missing id", http.StatusBadRequest)
+		return
+	}
+	field, ok := vars["field"]
+	if !ok {
+		logger.Info("unable to find field in vars of request")
+		http.Error(w, "invalid or missing field", http.StatusBadRequest)
+		return
+	}
+	idlog := logger.WithField("id", id)
+	meta, ok := server.data.Get(TrackID(id))
+	if !ok {
+		idlog.Info("unable to find metadata of id")
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	enc := json.NewEncoder(w)
+	flog := idlog.WithField("field", field)
+	switch field {
+	case "H_date":
+		flog.Info("responding with track date")
+		enc.Encode(meta.Date)
+	case "pilot":
+		flog.Info("responding with track pilot")
+		enc.Encode(meta.Pilot)
+	case "glider":
+		flog.Info("responding with track glider")
+		enc.Encode(meta.Glider)
+	case "glider_id":
+		flog.Info("responding with track glider id")
+		enc.Encode(meta.GliderID)
+	case "track_length":
+		flog.Info("responding with track length")
+		enc.Encode(meta.TrackLength)
+	default:
+		flog.Info("unable to find field of metadata")
+		http.Error(w, "invalid field", http.StatusBadRequest)
+	}
 }
