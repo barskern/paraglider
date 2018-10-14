@@ -34,7 +34,7 @@ func NewTrackID() TrackID {
 type TrackMeta struct {
 	Date        time.Time `json:"H_date"`
 	Pilot       string    `json:"pilot"`
-	Gilder      string    `json:"glider"`
+	Glider      string    `json:"glider"`
 	GliderID    string    `json:"glider_id"`
 	TrackLength float64   `json:"track_length"`
 }
