@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	log "github.com/sirupsen/logrus"
 	"strconv"
 	"time"
 )
@@ -85,11 +84,6 @@ func FormatAsISO8601(d time.Duration) string {
 			hasElements = true
 		}
 	}
-
-	log.WithFields(log.Fields{
-		"input":  d,
-		"result": buffer.String(),
-	}).Debug("converted duration to ISO8601")
 
 	return buffer.String()
 }
