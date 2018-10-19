@@ -4,6 +4,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/barskern/igcinfo)](https://goreportcard.com/report/github.com/barskern/igcinfo)
 [![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/barskern/igcinfo)
 [![Release](https://img.shields.io/github/release/barskern/igcinfo.svg)](https://github.com/barskern/igcinfo/releases/latest)
+[![Coverage Status](https://coveralls.io/repos/github/barskern/igcinfo/badge.svg?branch=master)](https://coveralls.io/github/barskern/igcinfo?branch=master)
+
 
 # About
 
