@@ -41,11 +41,11 @@ func main() {
 	http.Handle("/api/", http.StripPrefix("/api", &igcServer))
 
 	// Run the server
-	// This funciton will block the current thread
+	// This function will block the current thread
 	err := http.ListenAndServe(":"+port, nil)
 
 	// We will only get to this statement if the server unexpectedly crashes
 	log.WithFields(log.Fields{
 		"cause": err,
-	}).Fatal("server error occured")
+	}).Fatal("server error occurred")
 }

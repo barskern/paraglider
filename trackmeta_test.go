@@ -42,7 +42,7 @@ func TestTrackMetasGet(t *testing.T) {
 }
 
 // Test that all returned ids from 'Append' are found when using 'Get' when
-// running muliple goroutines
+// running multiple goroutines
 func TestTrackMetasGetConcurr(t *testing.T) {
 	const metaCount = 10
 	pureMetas := make([]TrackMeta, metaCount)

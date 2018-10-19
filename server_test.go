@@ -27,7 +27,7 @@ func TestIgcServerGetMeta(t *testing.T) {
 
 	var data map[string]interface{}
 	if err := json.Unmarshal(res.Body.Bytes(), &data); err != nil {
-		t.Errorf("recieved response body: '%s'", res.Body)
+		t.Errorf("received response body: '%s'", res.Body)
 		t.Fatalf("failed when trying to decode body as json")
 	}
 	if data["uptime"] == nil {

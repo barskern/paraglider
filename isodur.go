@@ -6,12 +6,12 @@ import (
 	"time"
 )
 
-// Defines how many days are in a month (approximatly 365 / 12)
+// Defines how many days are in a month (approximately 365 / 12)
 const daysInMonth = 30.415875
 
 // FormatAsISO8601 converts a duration into a ISO8601 compliant bytestring
 //
-// It will use the least amount of neccessary terms, so if the duration is 5
+// It will use the least amount of necessary terms, so if the duration is 5
 // seconds, this function will return `PT5S`.
 //
 // The only way this function can fail is if the underlaying `bytes.Buffer`

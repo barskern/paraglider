@@ -45,7 +45,7 @@ func NewIgcServer() (srv IgcServer) {
 	srv.router.MethodNotAllowedHandler =
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			logger := newReqLogger(r)
-			logger.Info("recieved request with disallowed method")
+			logger.Info("received request with disallowed method")
 
 			// A 405 MUST generate "Allow" header in the header (rfc 7231 6.5.5)
 			w.Header().Add("Allow", "GET POST")
@@ -55,7 +55,7 @@ func NewIgcServer() (srv IgcServer) {
 	srv.router.NotFoundHandler =
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			logger := newReqLogger(r)
-			logger.Info("recieved request which didn't match any paths")
+			logger.Info("received request which didn't match any paths")
 
 			http.Error(w, "content not found", http.StatusNotFound)
 		})
