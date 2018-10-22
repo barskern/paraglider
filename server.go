@@ -31,12 +31,12 @@ func NewIgcServer() (srv IgcServer) {
 	srv.router.HandleFunc("/igc", srv.trackGetAllHandler).Methods(http.MethodGet)
 
 	srv.router.HandleFunc(
-		"/igc/{id:[A-Za-z0-9+/]{8}}",
+		"/igc/{id:[A-Za-z0-9+/]+}",
 		srv.trackGetHandler,
 	).Methods(http.MethodGet)
 
 	srv.router.HandleFunc(
-		"/igc/{id:[A-Za-z0-9+/]{8}}/{field:[a-zA-Z0-9_-]+}",
+		"/igc/{id:[A-Za-z0-9+/]+}/{field:[a-zA-Z0-9_-]+}",
 		srv.trackGetFieldHandler,
 	).Methods(http.MethodGet)
 

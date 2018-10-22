@@ -34,11 +34,11 @@ func main() {
 	// Create a new server which encompasses all server state
 	igcServer := NewIgcServer()
 
-	// Route all requests to `/api/` to the igc-server
+	// Route all requests to `igcinfo/api/` to the igc-server
 	//
-	// Remove the `/api/` so that the server can handle requests directly
+	// Remove the `/igcinfo/api/` so that the server can handle requests directly
 	// without caring about the api-point its mounted on
-	http.Handle("/api/", http.StripPrefix("/api", &igcServer))
+	http.Handle("/igcinfo/api/", http.StripPrefix("/igcinfo/api", &igcServer))
 
 	// Run the server
 	// This function will block the current thread
