@@ -9,16 +9,77 @@
 
 # About
 
-Develop an online service that will allow users to browse information about IGC files. IGC is an international file format for soaring track files that are used by paragliders and gliders. The program will not store anything in a persistent storage. I.e. no information will be stored on the server side on a disk or database. Instead, it will store submitted tracks in memory. Subsequent API calls will allow the user to browse and inspect stored IGC files.
-
-For the development of the IGC processing, you will use an open source IGC library for Go: goigc
-
-The system must be deployed on either Heroku or Google App Engine, and the Go source code must be available for inspection by the teaching staff (read-only access is sufficient).
+An online service that will allow users to browse information about IGC files. IGC is an international file format for soaring track files that are used by paragliders and gliders. The program will not store anything in a persistent storage. I.e. no information will be stored on the server side on a disk or database. Instead, it will store submitted tracks in memory. Subsequent API calls will allow the user to browse and inspect stored IGC files.
 
 # API-endpoints
 
-- [X] `GET /api`
-- [X] `GET /api/igc`
-- [X] `POST /api/igc`
-- [X] `GET /api/igc/<id>`
-- [X] `GET /api/igc/<id>/<field>`
+## GET /igcinfo/api
+
+Returns metadata about the service.
+
+```
+{
+  "uptime": <uptime>
+  "info": "Service for IGC tracks."
+  "version": "v1"
+}
+```
+
+`<uptime>` is the current uptime of the service formatted according to [Duration format as specified by ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations).
+
+## POST /igcinfo/api/igc
+
+Register a track
+
+### Request
+
+```
+{
+  "url": "<url>"
+}
+```
+
+`<url>` represents a normal URL, that would work in a browser, eg: `http://skypolaris.org/wp-content/uploads/IGS%20Files/Madrid%20to%20Jerez.igc`.
+
+### Response
+
+```
+{
+  "id": "<id>"
+}
+```
+
+The returned `<id>` will be a unique identifier for the posted track.
+
+
+## GET /igcinfo/api/igc
+
+Returns all the ids of all registered tracks.
+
+```
+[<id1>, <id2>, ...]
+```
+
+## GET /igcinfo/api/igc/`<id>`
+
+Returns metadata about a specific track. `<id>` is a valid track id which was returned on insertion using `POST`.
+
+```
+{
+"H_date": <date from File Header, H-record>,
+"pilot": <pilot>,
+"glider": <glider>,
+"glider_id": <glider_id>,
+"track_length": <calculated total track length>
+}
+```
+
+## GET /igcinfo/api/igc/`<id>`/`<field>`
+
+Possible `<field>`-values:
+
+* `pilot`
+* `glider`
+* `glider_id`
+* `track_length`
+* `H_date`
