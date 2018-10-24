@@ -15,7 +15,7 @@ func main() {
 		case "-q":
 			log.SetLevel(log.WarnLevel)
 		case "-h":
-			fmt.Println("Usage: igcinfo [-q][-v][-h]\n\n-q Quiet mode (only warn and error)\n-v Verbose mode (all logs)")
+			fmt.Println("Usage: paragliding [-q][-v][-h]\n\n-q Quiet mode (only warn and error)\n-v Verbose mode (all logs)")
 			os.Exit(0)
 		}
 	}
@@ -31,16 +31,15 @@ func main() {
 		"logLevel": log.GetLevel(),
 	}).Info("initializing server")
 
-	// Create a new server which encompasses all server state
-	igcServer := NewIgcServer()
+	// Create a new server which encompasses all state
+	server := NewServer()
 
-	// Route all requests to `igcinfo/api/` to the igc-server
+	// Route all requests to `paragliding/api/` to the api-server
 	//
-	// Remove the `/igcinfo/api/` so that the server can handle requests directly
-	// without caring about the api-point its mounted on
-	http.Handle("/igcinfo/api/", http.StripPrefix("/igcinfo/api", &igcServer))
+	// Remove prefix `/paragliding/api/` (api server shouldn't care where its
+	// mounted)
+	http.Handle("/paragliding/api/", http.StripPrefix("/paragliding/api", &server))
 
-	// Run the server
 	// This function will block the current thread
 	err := http.ListenAndServe(":"+port, nil)
 

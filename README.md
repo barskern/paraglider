@@ -1,33 +1,25 @@
-# igcinfo
+# paragliding
 
-[![Build Status](https://travis-ci.com/barskern/igcinfo.svg?branch=master)](https://travis-ci.com/barskern/igcinfo)
-[![Go Report Card](https://goreportcard.com/badge/github.com/barskern/igcinfo)](https://goreportcard.com/report/github.com/barskern/igcinfo)
-[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/barskern/igcinfo)
-[![Release](https://img.shields.io/github/release/barskern/igcinfo.svg)](https://github.com/barskern/igcinfo/releases/latest)
-[![Coverage Status](https://coveralls.io/repos/github/barskern/igcinfo/badge.svg?branch=master)](https://coveralls.io/github/barskern/igcinfo?branch=master)
+[![Build Status](https://travis-ci.com/barskern/paragliding.svg?branch=master)](https://travis-ci.com/barskern/paragliding)
+[![Go Report Card](https://goreportcard.com/badge/github.com/barskern/paragliding)](https://goreportcard.com/report/github.com/barskern/paragliding)
+[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/barskern/paragliding)
+[![Release](https://img.shields.io/github/release/barskern/paragliding.svg)](https://github.com/barskern/paragliding/releases/latest)
+[![Coverage Status](https://coveralls.io/repos/github/barskern/paragliding/badge.svg?branch=master)](https://coveralls.io/github/barskern/paragliding?branch=master)
 
 
 # About
 
-An online service that will allow users to browse information about IGC files. IGC is an international file format for soaring track files that are used by paragliders and gliders. The program will not store anything in a persistent storage. I.e. no information will be stored on the server side on a disk or database. Instead, it will store submitted tracks in memory. Subsequent API calls will allow the user to browse and inspect stored IGC files.
+An online service that will allow users to browse information about IGC files. IGC is an international file format for soaring track files that are used by paragliders and gliders.
+
+The service will store IGC files metadata in a NoSQL Database (persistent storage). The system will generate events and it will monitor for new events happening from the outside services.
 
 # API-endpoints
 
-## GET /igcinfo/api
+## GET /paragliding/api
 
 Returns metadata about the service.
 
-```
-{
-  "uptime": <uptime>
-  "info": "Service for IGC tracks."
-  "version": "v1"
-}
-```
-
-`<uptime>` is the current uptime of the service formatted according to [Duration format as specified by ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations).
-
-## POST /igcinfo/api/igc
+## POST /paragliding/api/track
 
 Register a track
 
@@ -52,7 +44,7 @@ Register a track
 The returned `<id>` will be a unique identifier for the posted track.
 
 
-## GET /igcinfo/api/igc
+## GET /paragliding/api/track
 
 Returns all the ids of all registered tracks.
 
@@ -60,7 +52,7 @@ Returns all the ids of all registered tracks.
 [<id1>, <id2>, ...]
 ```
 
-## GET /igcinfo/api/igc/`<id>`
+## GET /paragliding/api/track/`<id>`
 
 Returns metadata about a specific track. `<id>` is a valid track id which was returned on insertion using `POST`.
 
@@ -70,11 +62,12 @@ Returns metadata about a specific track. `<id>` is a valid track id which was re
 "pilot": <pilot>,
 "glider": <glider>,
 "glider_id": <glider_id>,
-"track_length": <calculated total track length>
+"track_length": <calculated total track length>,
+"track_src_url": <the original URL used to upload the track, ie. the URL used with POST>
 }
 ```
 
-## GET /igcinfo/api/igc/`<id>`/`<field>`
+## GET /paragliding/api/track/`<id>`/`<field>`
 
 Possible `<field>`-values:
 
@@ -83,3 +76,4 @@ Possible `<field>`-values:
 * `glider_id`
 * `track_length`
 * `H_date`
+* `track_src_url`

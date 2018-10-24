@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"github.com/marni/goigc"
 	"math/rand"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -33,7 +34,9 @@ func NewTrackID() TrackID {
 //   "pilot": <pilot>,
 //   "glider": <glider>,
 //   "glider_id": <glider_id>,
-//   "track_length": <calculated total track length>
+//   "track_length": <calculated total track length>,
+//   "track_src_url": <the original URL used to upload the track, ie. the URL
+//   used with POST>
 // }
 // ```
 type TrackMeta struct {
@@ -42,6 +45,7 @@ type TrackMeta struct {
 	Glider      string    `json:"glider"`
 	GliderID    string    `json:"glider_id"`
 	TrackLength float64   `json:"track_length"`
+	TrackSrcURL url.URL   `json:"track_src_url"`
 }
 
 // calcTotalDistance returns the total distance between the points in order
@@ -53,13 +57,14 @@ func calcTotalDistance(points []igc.Point) (trackLength float64) {
 }
 
 // TrackMetaFrom converts a igc.Track into a TrackMeta struct
-func TrackMetaFrom(track igc.Track) TrackMeta {
+func TrackMetaFrom(url url.URL, track igc.Track) TrackMeta {
 	return TrackMeta{
 		track.Date,
 		track.Pilot,
 		track.GliderType,
 		track.GliderID,
 		calcTotalDistance(track.Points),
+		url,
 	}
 }
 

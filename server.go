@@ -12,31 +12,32 @@ import (
 	"time"
 )
 
-// IgcServer distributes request to a pool of worker gorutines
-type IgcServer struct {
+// Server distributes request to a pool of worker gorutines
+type Server struct {
 	startupTime time.Time
 	data        TrackMetas
-	router      *mux.Router
+	// TODO change from mux to pure regexes because of the simple routing
+	router *mux.Router
 }
 
-// NewIgcServer creates a new server which handles requests to the igc api
-func NewIgcServer() (srv IgcServer) {
-	srv = IgcServer{
+// NewServer creates a new server which handles requests to the igc api
+func NewServer() (srv Server) {
+	srv = Server{
 		time.Now(),
 		NewTrackMetas(),
 		mux.NewRouter(),
 	}
 	srv.router.HandleFunc("/", srv.metaHandler).Methods(http.MethodGet)
-	srv.router.HandleFunc("/igc", srv.trackRegHandler).Methods(http.MethodPost)
-	srv.router.HandleFunc("/igc", srv.trackGetAllHandler).Methods(http.MethodGet)
+	srv.router.HandleFunc("/track", srv.trackRegHandler).Methods(http.MethodPost)
+	srv.router.HandleFunc("/track", srv.trackGetAllHandler).Methods(http.MethodGet)
 
 	srv.router.HandleFunc(
-		"/igc/{id:[A-Za-z0-9+/]{8}}",
+		"/track/{id:[A-Za-z0-9+/]{8}}",
 		srv.trackGetHandler,
 	).Methods(http.MethodGet)
 
 	srv.router.HandleFunc(
-		"/igc/{id:[A-Za-z0-9+/]{8}}/{field:[a-zA-Z0-9_-]+}",
+		"/track/{id:[A-Za-z0-9+/]{8}}/{field:[a-zA-Z0-9_-]+}",
 		srv.trackGetFieldHandler,
 	).Methods(http.MethodGet)
 
@@ -63,7 +64,7 @@ func NewIgcServer() (srv IgcServer) {
 	return
 }
 
-func (server *IgcServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (server *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	server.router.ServeHTTP(w, r)
 }
 
@@ -83,22 +84,13 @@ func newReqLogger(r *http.Request) *log.Entry {
 	})
 }
 
-// metaHandler returns the metadata about the api endpoint in the following
-// structure
-//
-// ```json
-// {
-//   "uptime": <uptime>
-//   "info": "Service for IGC tracks."
-//   "version": "v1"
-// }
-// ```
-func (server *IgcServer) metaHandler(w http.ResponseWriter, r *http.Request) {
+// metaHandler returns the metadata about the api endpoint
+func (server *Server) metaHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
 
 	metadata := map[string]interface{}{
 		"uptime":  FormatAsISO8601(time.Since(server.startupTime)),
-		"info":    "Service for IGC tracks.",
+		"info":    "Service for Paragliding tracks.",
 		"version": "v1",
 	}
 
@@ -125,7 +117,7 @@ func (server *IgcServer) metaHandler(w http.ResponseWriter, r *http.Request) {
 // }
 // ```
 // FIXME errors are handled gracefully but verbosly, is there a better way?
-func (server *IgcServer) trackRegHandler(w http.ResponseWriter, r *http.Request) {
+func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
 
 	logger.Info("processing request to register track")
@@ -168,7 +160,7 @@ func (server *IgcServer) trackRegHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Create and add new trackmeta object
-	trackMeta := TrackMetaFrom(track)
+	trackMeta := TrackMetaFrom(*reqURL, track)
 	id := server.data.Append(trackMeta)
 
 	result := map[string]interface{}{
@@ -193,7 +185,7 @@ type TrackRegRequest struct {
 // ```json
 // [ <id1>, <id2>, ... ]
 // ```
-func (server *IgcServer) trackGetAllHandler(w http.ResponseWriter, r *http.Request) {
+func (server *Server) trackGetAllHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
 
 	ids := server.data.GetAllIDs()
@@ -209,10 +201,11 @@ func (server *IgcServer) trackGetAllHandler(w http.ResponseWriter, r *http.Reque
 //   "pilot": <pilot>,
 //   "glider": <glider>,
 //   "glider_id": <glider_id>,
-//   "track_length": <calculated total track length>
+//   "track_length": <calculated total track length>,
+//   "track_src_url": <the original URL used to upload the track, ie. the URL used with POST>
 // }
 //```
-func (server *IgcServer) trackGetHandler(w http.ResponseWriter, r *http.Request) {
+func (server *Server) trackGetHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
 
 	vars := mux.Vars(r)
@@ -232,11 +225,12 @@ func (server *IgcServer) trackGetHandler(w http.ResponseWriter, r *http.Request)
 		"trackmeta": meta,
 		"id":        id,
 	}).Info("responding with track meta for given id")
+	// TODO fix encoding for url.URL in response json
 	json.NewEncoder(w).Encode(meta)
 }
 
 // trackGetFieldHandler should return the field specified in the url
-func (server *IgcServer) trackGetFieldHandler(w http.ResponseWriter, r *http.Request) {
+func (server *Server) trackGetFieldHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
 
 	vars := mux.Vars(r)
@@ -277,6 +271,9 @@ func (server *IgcServer) trackGetFieldHandler(w http.ResponseWriter, r *http.Req
 	case "track_length":
 		flog.Info("responding with track length")
 		w.Write([]byte(strconv.FormatFloat(meta.TrackLength, 'f', -1, 64)))
+	case "track_src_url":
+		flog.Info("responding with track src url")
+		w.Write([]byte(meta.TrackSrcURL.String()))
 	default:
 		flog.Info("unable to find field of metadata")
 		http.Error(w, "invalid field", http.StatusBadRequest)

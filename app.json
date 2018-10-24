@@ -1,11 +1,11 @@
 {
-    "name": "igcinfo",
-    "description": "An online service to browse information about IGC files",
+    "name": "paragliding",
+    "description": "An online service to browse information about IGC files (persisten storage + webhooks)",
     "keywords": [
         "go",
         "igc",
         "REST"
     ],
-    "website": "https://github.com/barskern/igcinfo",
-    "repository": "https://github.com/barskern/igcinfo"
+    "website": "https://github.com/barskern/paragliding",
+    "repository": "https://github.com/barskern/paragliding"
 }

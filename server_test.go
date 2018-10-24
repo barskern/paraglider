@@ -6,9 +6,9 @@ import (
 	"testing"
 )
 
-var igcServer = NewIgcServer()
+var server = NewServer()
 
-// Test GET / of the igc-server
+// Test GET /
 //
 // Should result in JSON object with the following structure:
 //
@@ -23,7 +23,7 @@ func TestIgcServerGetMeta(t *testing.T) {
 	req := httptest.NewRequest("GET", "/", nil)
 	res := httptest.NewRecorder()
 
-	igcServer.ServeHTTP(res, req)
+	server.ServeHTTP(res, req)
 
 	var data map[string]interface{}
 	if err := json.Unmarshal(res.Body.Bytes(), &data); err != nil {
@@ -41,15 +41,12 @@ func TestIgcServerGetMeta(t *testing.T) {
 	}
 }
 
-// Test GET /rubbish of the igc-server
-//
-// Should result in a 404 response
-//
+// Test GET /rubbish -> 404 response
 func TestIgcServerGetRubbish(t *testing.T) {
 	req := httptest.NewRequest("GET", "/rubbish", nil)
 	res := httptest.NewRecorder()
 
-	igcServer.ServeHTTP(res, req)
+	server.ServeHTTP(res, req)
 
 	code := res.Result().StatusCode
 	if code != 404 {
@@ -57,15 +54,12 @@ func TestIgcServerGetRubbish(t *testing.T) {
 	}
 }
 
-// Test PUT / of the igc-server
-//
-// Should result in a 405 response
-//
+// Test PUT -> 405 response
 func TestIgcServerPutMethod(t *testing.T) {
 	req := httptest.NewRequest("PUT", "/", nil)
 	res := httptest.NewRecorder()
 
-	igcServer.ServeHTTP(res, req)
+	server.ServeHTTP(res, req)
 
 	code := res.Result().StatusCode
 	if code != 405 {

@@ -1,1 +1,1 @@
-web: igcinfo
+web: paragliding
