@@ -11,7 +11,7 @@
 
 An online service that will allow users to browse information about IGC files. IGC is an international file format for soaring track files that are used by paragliders and gliders.
 
-The service will store IGC files metadata in a NoSQL Database (persistent storage). The system will generate events and it will monitor for new events happening from the outside services.
+The service will store IGC files metadata in a NoSQL Database (persistent storage). The system will generate events, which can be subscribed to using webhooks, and it will monitor for new events happening from the outside services.
 
 # API-endpoints
 
