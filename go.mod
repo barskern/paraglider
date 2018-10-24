@@ -1,4 +1,4 @@
-module github.com/barskern/igcinfo
+module github.com/barskern/paragliding
 
 require (
 	github.com/gorilla/mux v1.6.2
