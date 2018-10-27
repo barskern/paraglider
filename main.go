@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/barskern/paragliding/igcserver"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -35,7 +36,7 @@ func main() {
 	// (dependency injection)
 	httpClient := http.Client{}
 	// Create a new server which encompasses all state
-	server := NewServer(&httpClient)
+	server := igcserver.NewServer(&httpClient)
 
 	// Route all requests to `paragliding/api/` to the api-server
 	//

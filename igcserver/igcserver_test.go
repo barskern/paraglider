@@ -1,4 +1,4 @@
-package main
+package igcserver
 
 import (
 	"bytes"
@@ -21,7 +21,7 @@ func makeIgcTestServer() *httptest.Server {
 	return httptest.NewUnstartedServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.RequestURI == "/test.igc" {
-				f, err := os.Open("test.igc")
+				f, err := os.Open("../assets/test.igc")
 				if err != nil {
 					fmt.Printf("error when trying to read 'test.igc': %s", err)
 				}
