@@ -45,7 +45,7 @@ func makeIgcTestServer() *httptest.Server {
 // Convenience function to create testdata to insert into the database
 func makeTestData(serverURL string) []TrackMeta {
 	return []TrackMeta{
-		TrackMeta{
+		{
 			time.Now(),
 			"Aladin Special",
 			"Magical Carpet",
@@ -53,7 +53,7 @@ func makeTestData(serverURL string) []TrackMeta {
 			1200,
 			serverURL + "/aladin.igc",
 		},
-		TrackMeta{
+		{
 			time.Now(),
 			"John Normal",
 			"Boeng 777",
