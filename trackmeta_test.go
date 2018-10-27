@@ -1,42 +1,57 @@
 package main
 
 import (
+	"math/rand"
 	"sync"
 	"testing"
 )
 
-// Test that the generated ids are unique
-func TestTrackIDGeneration(t *testing.T) {
-	const idCount = 100
-	var ids [idCount]TrackID
-	for i := 0; i < idCount; i++ {
-		newID := NewTrackID()
+// Test that all returned ids from 'Append' are found when using 'Get'
+func TestTrackMetaDuplicate(t *testing.T) {
+	meta := TrackMeta{
+		TrackSrcURL: "not-unique",
+	}
 
-		for j := 0; j < i; j++ {
-			if ids[j] == newID {
-				t.Fatalf("generated a duplicated id in '%d' attempts", idCount)
-			}
-		}
+	metas := NewTrackMetas()
 
-		ids[i] = newID
+	var err error
+	_, err = metas.Append(meta)
+	if err != nil {
+		t.Fatalf("unable to add metadata: %s", err)
+	}
+	_, err = metas.Append(meta)
+	if err == nil {
+		t.Fatalf("same track meta can be registered twice")
 	}
 }
 
 // Test that all returned ids from 'Append' are found when using 'Get'
 func TestTrackMetasGet(t *testing.T) {
 	const metaCount = 10
-	pureMetas := make([]TrackMeta, metaCount)
+	var pureMetas [metaCount]TrackMeta
+	buf := make([]byte, 15)
+	for i := 0; i < metaCount; i++ {
+		rand.Read(buf)
+		pureMetas[i] = TrackMeta{
+			TrackSrcURL: string(buf),
+		}
+	}
 
 	metas := NewTrackMetas()
 
 	var ids [metaCount]TrackID
+	var err error
 	for i, v := range pureMetas {
-		ids[i] = metas.Append(v)
+		ids[i], err = metas.Append(v)
+		if err != nil {
+			t.Fatalf("unable to add metadata: %s", err)
+			continue
+		}
 	}
 
 	for _, pureID := range ids {
 		if _, ok := metas.Get(pureID); !ok {
-			t.Fatalf("didn't find id '%s' in result of 'GetAllIDs'", pureID)
+			t.Fatalf("didn't find id '%d' in result of 'GetAllIDs'", pureID)
 		}
 	}
 }
@@ -45,13 +60,23 @@ func TestTrackMetasGet(t *testing.T) {
 // running multiple goroutines
 func TestTrackMetasGetConcurr(t *testing.T) {
 	const metaCount = 10
-	pureMetas := make([]TrackMeta, metaCount)
+	var pureMetas [metaCount]TrackMeta
+	buf := make([]byte, 15)
+	for i := 0; i < metaCount; i++ {
+		rand.Read(buf)
+		pureMetas[i] = TrackMeta{
+			TrackSrcURL: string(buf),
+		}
+	}
 
 	metas := NewTrackMetas()
-
 	var ids [metaCount]TrackID
+	var err error
 	for i, v := range pureMetas {
-		ids[i] = metas.Append(v)
+		ids[i], err = metas.Append(v)
+		if err != nil {
+			t.Fatalf("unable to add metadata: %s", err)
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -59,7 +84,7 @@ func TestTrackMetasGetConcurr(t *testing.T) {
 		wg.Add(1)
 		go func(metas *TrackMetas, id TrackID) {
 			if _, ok := metas.Get(id); !ok {
-				t.Fatalf("didn't find id '%s' in result of 'GetAllIDs'", id)
+				t.Fatalf("didn't find id '%d' in result of 'GetAllIDs'", id)
 			}
 			wg.Done()
 		}(&metas, pureID)
@@ -70,13 +95,23 @@ func TestTrackMetasGetConcurr(t *testing.T) {
 // Test that all returned ids from 'Append' are found in the output of 'GetAllIDs'
 func TestTrackMetasGetAllIDs(t *testing.T) {
 	const metaCount = 10
-	pureMetas := make([]TrackMeta, metaCount)
+	var pureMetas [metaCount]TrackMeta
+	buf := make([]byte, 15)
+	for i := 0; i < metaCount; i++ {
+		rand.Read(buf)
+		pureMetas[i] = TrackMeta{
+			TrackSrcURL: string(buf),
+		}
+	}
 
 	metas := NewTrackMetas()
-
 	var ids [metaCount]TrackID
+	var err error
 	for i, v := range pureMetas {
-		ids[i] = metas.Append(v)
+		ids[i], err = metas.Append(v)
+		if err != nil {
+			t.Fatalf("unable to add metadata: %s", err)
+		}
 	}
 
 	for _, pureID := range ids {
@@ -88,7 +123,7 @@ func TestTrackMetasGetAllIDs(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Fatalf("didn't find id '%s' in result of 'GetAllIDs'", pureID)
+			t.Fatalf("didn't find id '%d' in result of 'GetAllIDs'", pureID)
 		}
 	}
 }

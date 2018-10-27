@@ -31,8 +31,11 @@ func main() {
 		"logLevel": log.GetLevel(),
 	}).Info("initializing server")
 
+	// Make a http client which the server will use for external requests
+	// (dependency injection)
+	httpClient := http.Client{}
 	// Create a new server which encompasses all state
-	server := NewServer()
+	server := NewServer(&httpClient)
 
 	// Route all requests to `paragliding/api/` to the api-server
 	//

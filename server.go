@@ -16,15 +16,17 @@ import (
 type Server struct {
 	startupTime time.Time
 	data        TrackMetas
+	httpClient  *http.Client
 	// TODO change from mux to pure regexes because of the simple routing
 	router *mux.Router
 }
 
 // NewServer creates a new server which handles requests to the igc api
-func NewServer() (srv Server) {
+func NewServer(httpClient *http.Client) (srv Server) {
 	srv = Server{
 		time.Now(),
 		NewTrackMetas(),
+		httpClient,
 		mux.NewRouter(),
 	}
 	srv.router.HandleFunc("/", srv.metaHandler).Methods(http.MethodGet)
@@ -32,12 +34,12 @@ func NewServer() (srv Server) {
 	srv.router.HandleFunc("/track", srv.trackGetAllHandler).Methods(http.MethodGet)
 
 	srv.router.HandleFunc(
-		"/track/{id:[A-Za-z0-9+/]{8}}",
+		"/track/{id}",
 		srv.trackGetHandler,
 	).Methods(http.MethodGet)
 
 	srv.router.HandleFunc(
-		"/track/{id:[A-Za-z0-9+/]{8}}/{field:[a-zA-Z0-9_-]+}",
+		"/track/{id}/{field}",
 		srv.trackGetFieldHandler,
 	).Methods(http.MethodGet)
 
@@ -116,7 +118,6 @@ func (server *Server) metaHandler(w http.ResponseWriter, r *http.Request) {
 //   "id": <TrackID>
 // }
 // ```
-// FIXME errors are handled gracefully but verbosly, is there a better way?
 func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
 
@@ -137,7 +138,7 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid url", http.StatusBadRequest)
 		return
 	}
-	resp, err := http.Get(reqURL.String())
+	resp, err := server.httpClient.Get(reqURL.String())
 	if err != nil {
 		logger.WithField("error", err).Info("unable to fetch data from provided url")
 		http.Error(w, "unable to fetch data from provided url", http.StatusBadRequest)
@@ -161,7 +162,16 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create and add new trackmeta object
 	trackMeta := TrackMetaFrom(*reqURL, track)
-	id := server.data.Append(trackMeta)
+	id, err := server.data.Append(trackMeta)
+
+	if err != nil {
+		logger.WithFields(log.Fields{
+			"trackmeta": trackMeta,
+			"error":     err,
+		}).Info("unable to add track meta")
+		http.Error(w, "track with same url already exists", http.StatusForbidden)
+		return
+	}
 
 	result := map[string]interface{}{
 		"id": id,
@@ -209,23 +219,24 @@ func (server *Server) trackGetHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
 
 	vars := mux.Vars(r)
-	id, ok := vars["id"]
-	if !ok {
-		logger.Info("unable to find id in vars of request")
-		http.Error(w, "invalid or missing id", http.StatusBadRequest)
+	// Should never fail because of mux
+	idStr, _ := vars["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		logger.WithField("id", idStr).Info("id must be a valid number")
+		http.Error(w, "invalid id", http.StatusBadRequest)
 		return
 	}
 	meta, ok := server.data.Get(TrackID(id))
 	if !ok {
 		logger.WithField("id", id).Info("unable to find metadata of id")
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		http.Error(w, "content not found", http.StatusNotFound)
 		return
 	}
 	logger.WithFields(log.Fields{
 		"trackmeta": meta,
 		"id":        id,
 	}).Info("responding with track meta for given id")
-	// TODO fix encoding for url.URL in response json
 	json.NewEncoder(w).Encode(meta)
 }
 
@@ -234,23 +245,22 @@ func (server *Server) trackGetFieldHandler(w http.ResponseWriter, r *http.Reques
 	logger := newReqLogger(r)
 
 	vars := mux.Vars(r)
-	id, ok := vars["id"]
-	if !ok {
-		logger.Info("unable to find id in vars of request")
-		http.Error(w, "invalid or missing id", http.StatusBadRequest)
+
+	// Should never fail because of mux
+	idStr, _ := vars["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		logger.WithField("id", idStr).Info("id must be a valid number")
+		http.Error(w, "invalid id", http.StatusBadRequest)
 		return
 	}
-	field, ok := vars["field"]
-	if !ok {
-		logger.Info("unable to find field in vars of request")
-		http.Error(w, "invalid or missing field", http.StatusBadRequest)
-		return
-	}
+	field, _ := vars["field"]
 	idlog := logger.WithField("id", id)
+
 	meta, ok := server.data.Get(TrackID(id))
 	if !ok {
 		idlog.Info("unable to find metadata of id")
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		http.Error(w, "content not found", http.StatusNotFound)
 		return
 	}
 
@@ -273,7 +283,7 @@ func (server *Server) trackGetFieldHandler(w http.ResponseWriter, r *http.Reques
 		w.Write([]byte(strconv.FormatFloat(meta.TrackLength, 'f', -1, 64)))
 	case "track_src_url":
 		flog.Info("responding with track src url")
-		w.Write([]byte(meta.TrackSrcURL.String()))
+		w.Write([]byte(meta.TrackSrcURL))
 	default:
 		flog.Info("unable to find field of metadata")
 		http.Error(w, "invalid field", http.StatusBadRequest)

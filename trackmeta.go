@@ -1,29 +1,22 @@
 package main
 
 import (
-	"encoding/base64"
+	"errors"
 	"github.com/marni/goigc"
-	"math/rand"
+	"hash/fnv"
 	"net/url"
 	"sync"
 	"time"
 )
 
 // TrackID is a unique id for a track
-type TrackID string
-
-func init() {
-	// Seed randomness to make it more random
-	rand.Seed(time.Now().UnixNano())
-}
+type TrackID uint32
 
 // NewTrackID creates a new unique track ID
-func NewTrackID() TrackID {
-	var id [6]byte
-	rand.Read(id[:])
-	// Encode random bytes as a base64 string so that it only uses valid ascii
-	// characters (this is to make ids "pretty" in the url)
-	return TrackID(base64.StdEncoding.EncodeToString(id[:]))
+func NewTrackID(v []byte) TrackID {
+	hasher := fnv.New32()
+	hasher.Write(v)
+	return TrackID(hasher.Sum32())
 }
 
 // TrackMeta contains a subset of metainformation about a igc-track
@@ -45,7 +38,7 @@ type TrackMeta struct {
 	Glider      string    `json:"glider"`
 	GliderID    string    `json:"glider_id"`
 	TrackLength float64   `json:"track_length"`
-	TrackSrcURL url.URL   `json:"track_src_url"`
+	TrackSrcURL string    `json:"track_src_url"`
 }
 
 // calcTotalDistance returns the total distance between the points in order
@@ -64,7 +57,7 @@ func TrackMetaFrom(url url.URL, track igc.Track) TrackMeta {
 		track.GliderType,
 		track.GliderID,
 		calcTotalDistance(track.Points),
-		url,
+		url.String(),
 	}
 }
 
@@ -89,12 +82,15 @@ func (metas *TrackMetas) Get(id TrackID) (TrackMeta, bool) {
 }
 
 // Append appends a track meta and returns the given id
-func (metas *TrackMetas) Append(meta TrackMeta) TrackID {
-	id := NewTrackID()
+func (metas *TrackMetas) Append(meta TrackMeta) (TrackID, error) {
+	id := NewTrackID([]byte(meta.TrackSrcURL))
 	metas.Lock()
 	defer metas.Unlock()
-	metas.data[id] = meta
-	return id
+	if _, exists := metas.data[id]; !exists {
+		metas.data[id] = meta
+		return id, nil
+	}
+	return 0, errors.New("trackmeta with same url already exists")
 }
 
 // GetAllIDs fetches all the stored ids
