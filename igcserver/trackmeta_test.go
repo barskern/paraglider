@@ -12,7 +12,7 @@ func TestTrackMetaDuplicate(t *testing.T) {
 		TrackSrcURL: "not-unique",
 	}
 
-	metas := NewTrackMetas()
+	metas := NewTrackMetasMap()
 
 	var err error
 	_, err = metas.Append(meta)
@@ -37,7 +37,7 @@ func TestTrackMetasGet(t *testing.T) {
 		}
 	}
 
-	metas := NewTrackMetas()
+	metas := NewTrackMetasMap()
 
 	var ids [metaCount]TrackID
 	var err error
@@ -69,7 +69,7 @@ func TestTrackMetasGetConcurr(t *testing.T) {
 		}
 	}
 
-	metas := NewTrackMetas()
+	metas := NewTrackMetasMap()
 	var ids [metaCount]TrackID
 	var err error
 	for i, v := range pureMetas {
@@ -82,7 +82,7 @@ func TestTrackMetasGetConcurr(t *testing.T) {
 	var wg sync.WaitGroup
 	for _, pureID := range ids {
 		wg.Add(1)
-		go func(metas *TrackMetas, id TrackID) {
+		go func(metas *TrackMetasMap, id TrackID) {
 			if _, ok := metas.Get(id); !ok {
 				t.Fatalf("didn't find id '%d' in result of 'GetAllIDs'", id)
 			}
@@ -104,7 +104,7 @@ func TestTrackMetasGetAllIDs(t *testing.T) {
 		}
 	}
 
-	metas := NewTrackMetas()
+	metas := NewTrackMetasMap()
 	var ids [metaCount]TrackID
 	var err error
 	for i, v := range pureMetas {

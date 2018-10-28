@@ -61,20 +61,27 @@ func TrackMetaFrom(url url.URL, track igc.Track) TrackMeta {
 	}
 }
 
-// TrackMetas contains a map to many TrackMeta objects which are protected
+// TrackMetas is a interface for all storages containing TrackMeta
+type TrackMetas interface {
+	Get(id TrackID) (TrackMeta, bool)
+	Append(meta TrackMeta) (TrackID, error)
+	GetAllIDs() []TrackID
+}
+
+// TrackMetasMap contains a map to many TrackMeta objects which are protected
 // by a RWMutex and indexed by a unique id
-type TrackMetas struct {
+type TrackMetasMap struct {
 	sync.RWMutex
 	data map[TrackID]TrackMeta
 }
 
-// NewTrackMetas creates a new mutex and mapping from ID to TrackMeta
-func NewTrackMetas() TrackMetas {
-	return TrackMetas{sync.RWMutex{}, make(map[TrackID]TrackMeta)}
+// NewTrackMetasMap creates a new mutex and mapping from ID to TrackMeta
+func NewTrackMetasMap() TrackMetasMap {
+	return TrackMetasMap{sync.RWMutex{}, make(map[TrackID]TrackMeta)}
 }
 
 // Get fetches the track meta of a specific id if it exists
-func (metas *TrackMetas) Get(id TrackID) (TrackMeta, bool) {
+func (metas *TrackMetasMap) Get(id TrackID) (TrackMeta, bool) {
 	metas.RLock()
 	defer metas.RUnlock()
 	v, ok := metas.data[id]
@@ -82,7 +89,7 @@ func (metas *TrackMetas) Get(id TrackID) (TrackMeta, bool) {
 }
 
 // Append appends a track meta and returns the given id
-func (metas *TrackMetas) Append(meta TrackMeta) (TrackID, error) {
+func (metas *TrackMetasMap) Append(meta TrackMeta) (TrackID, error) {
 	id := NewTrackID([]byte(meta.TrackSrcURL))
 	metas.Lock()
 	defer metas.Unlock()
@@ -94,7 +101,7 @@ func (metas *TrackMetas) Append(meta TrackMeta) (TrackID, error) {
 }
 
 // GetAllIDs fetches all the stored ids
-func (metas *TrackMetas) GetAllIDs() []TrackID {
+func (metas *TrackMetasMap) GetAllIDs() []TrackID {
 	metas.RLock()
 	defer metas.RUnlock()
 	keys := make([]TrackID, 0, len(metas.data))

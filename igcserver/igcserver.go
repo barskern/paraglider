@@ -23,9 +23,10 @@ type Server struct {
 
 // NewServer creates a new server which handles requests to the igc api
 func NewServer(httpClient *http.Client) (srv Server) {
+	trackMetas := NewTrackMetasMap()
 	srv = Server{
 		time.Now(),
-		NewTrackMetas(),
+		&trackMetas,
 		httpClient,
 		mux.NewRouter(),
 	}
