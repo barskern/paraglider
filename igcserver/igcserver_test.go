@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -562,6 +563,86 @@ func TestGetWebhookByIdValid(t *testing.T) {
 		got, _ := json.MarshalIndent(data, "", "  ")
 		if !cmp.Equal(expt, got) {
 			t.Errorf("returned track was not equal to inserted track:\n\nrequested id: %d\nexpected:\n%s\n\nreturned:\n%s", id, expt, got)
+		}
+	}
+}
+
+// Test valid POST /webhook/new_track/
+func TestRegWebhook(t *testing.T) {
+	webhooksMap := NewWebhooksMap()
+	server := NewServer(nil, nil, nil, &webhooksMap)
+
+	testData := makeWebhooksTestData()
+	ids := make([]WebhookID, len(testData))
+	b := new(bytes.Buffer)
+	for i, webhook := range testData {
+		json.NewEncoder(b).Encode(&webhook)
+		req := httptest.NewRequest("POST", "/webhook/new_track", b)
+		res := httptest.NewRecorder()
+
+		server.ServeHTTP(res, req)
+
+		if res.Result().StatusCode != 200 {
+			t.Fatalf("unable to add webhook through POST request")
+		}
+		defer res.Result().Body.Close()
+		var id int
+		var err error
+		if id, err = strconv.Atoi(string(res.Body.Bytes())); err != nil {
+			t.Fatal("unable to decode response as integer")
+		}
+		ids[i] = WebhookID(id)
+	}
+
+	for i, id := range ids {
+		uri := fmt.Sprintf("/webhook/new_track/%d", id)
+		req := httptest.NewRequest("GET", uri, nil)
+		res := httptest.NewRecorder()
+
+		server.ServeHTTP(res, req)
+
+		var data WebhookInfo
+		if err := json.Unmarshal(res.Body.Bytes(), &data); err != nil {
+			t.Errorf("received response body: '%s'", res.Body)
+			t.Fatalf("failed when trying to decode body as json")
+		}
+		expt, _ := json.MarshalIndent(testData[i], "", "  ")
+		got, _ := json.MarshalIndent(data, "", "  ")
+		if !cmp.Equal(expt, got) {
+			t.Errorf("returned track was not equal to inserted track:\n\nrequested id: %d\nexpected:\n%s\n\nreturned:\n%s", id, expt, got)
+		}
+	}
+}
+
+// Test invalid POST /webhook/new_track/
+func TestRegWebhookBad(t *testing.T) {
+	webhooksMap := NewWebhooksMap()
+	server := NewServer(nil, nil, nil, &webhooksMap)
+
+	var data = []struct {
+		int
+		string
+	}{
+		{400, "{\"sdfsfs\":\"sadf\"}"},
+		{400, "{\"s11sfs\":\"sadf\"}"},
+		{400, "\"s11sfs\":\"sadf\"}"},
+		{400, "{\"sdfsfs\":\12123}"},
+		{400, "{\"webhookURL\":12123}"},
+		{400, "{\"webhookURL\":aabb}"},
+		{400, "{\"webhookURl\":\"abff}"},
+	}
+
+	b := new(bytes.Buffer)
+	for _, dat := range data {
+		b.Reset()
+		b.WriteString(dat.string)
+		req := httptest.NewRequest("POST", "/webhook/new_track", b)
+		res := httptest.NewRecorder()
+
+		server.ServeHTTP(res, req)
+		code := res.Result().StatusCode
+		if code != dat.int {
+			t.Fatalf("expected `POST /webhook/new_track/` to give '%d' but got '%d'", dat.int, code)
 		}
 	}
 }

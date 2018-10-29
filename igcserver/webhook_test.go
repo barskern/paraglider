@@ -95,6 +95,14 @@ func TestWebhookDeletion(t *testing.T) {
 	}
 }
 
+// Test that deleted webhooks are removed
+func TestWebhookDeletionOfNonexisting(t *testing.T) {
+	webhooks := NewWebhooksMap()
+	if _, err := webhooks.Delete(NewWebhookID([]byte("asd"))); err == nil {
+		t.Fatalf("non-existing webhook should not be deleted successfully")
+	}
+}
+
 // WebhooksMap contains a map to many WebhookInfo objects which are protected
 // by a RWMutex and indexed by a unique id
 type WebhooksMap struct {

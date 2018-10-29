@@ -117,7 +117,7 @@ func (server *Server) webhookGetHandler(w http.ResponseWriter, r *http.Request) 
 	idlog := logger.WithField("id", id)
 	webhook, err := server.webhooks.Get(WebhookID(id))
 	if err == ErrWebhookNotFound {
-		idlog.Info("unable to find metadata of id")
+		idlog.Info("unable to find webhook")
 		http.Error(w, "content not found", http.StatusNotFound)
 		return
 	} else if err != nil {
