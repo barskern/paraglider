@@ -5,22 +5,30 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
+const (
+	trackCollection = "igctracks"
+)
+
 // TrackMetasDB contains a map to many TrackMeta objects which are protected
 // by a RWMutex and indexed by a unique id
 type TrackMetasDB struct {
-	*mgo.Collection
+	session *mgo.Session
 }
 
 // NewTrackMetasDB creates a new mutex and mapping from ID to TrackMeta
-func NewTrackMetasDB(collection *mgo.Collection) TrackMetasDB {
+func NewTrackMetasDB(session *mgo.Session) TrackMetasDB {
 	return TrackMetasDB{
-		collection,
+		session,
 	}
 }
 
 // Get fetches the track meta of a specific id if it exists
 func (metas *TrackMetasDB) Get(id TrackID) (meta TrackMeta, err error) {
-	err = metas.Find(bson.M{"id": id}).One(&meta)
+	conn := metas.session.Copy()
+	defer conn.Close()
+	tracks := conn.DB("").C(trackCollection)
+
+	err = tracks.Find(bson.M{"id": id}).One(&meta)
 	if err == mgo.ErrNotFound {
 		err = ErrTrackNotFound
 	}
@@ -29,19 +37,29 @@ func (metas *TrackMetasDB) Get(id TrackID) (meta TrackMeta, err error) {
 
 // Append appends a track meta and returns the given id
 func (metas *TrackMetasDB) Append(meta TrackMeta) (err error) {
-	_, err = metas.Get(meta.ID)
-	if err == ErrTrackNotFound {
-		err = metas.Insert(meta)
-	} else if err == nil {
-		err = ErrTrackAlreadyExists
+	conn := metas.session.Copy()
+	defer conn.Close()
+	tracks := conn.DB("").C(trackCollection)
+
+	n, err := tracks.Find(bson.M{"id": meta.ID}).Count()
+	if err == nil {
+		if n == 0 {
+			err = tracks.Insert(meta)
+		} else if n > 0 {
+			err = ErrTrackAlreadyExists
+		}
 	}
 	return
 }
 
 // GetAllIDs fetches all the stored ids
 func (metas *TrackMetasDB) GetAllIDs() (ids []TrackID, err error) {
+	conn := metas.session.Copy()
+	defer conn.Close()
+	tracks := conn.DB("").C(trackCollection)
+
 	var trackMetas []TrackMeta
-	err = metas.Find(nil).All(&trackMetas)
+	err = tracks.Find(nil).All(&trackMetas)
 	if err == nil {
 		ids = make([]TrackID, len(trackMetas))
 		for i, v := range trackMetas {

@@ -38,18 +38,17 @@ func main() {
 		"logLevel": log.GetLevel(),
 	}).Info("initializing server")
 
-	session, err := mgo.Dial(mongoURL)
+	mongoSession, err := mgo.Dial(mongoURL)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"uri":   mongoURL,
 			"error": err,
 		}).Fatal("unable to connect to mongo db")
 	}
-	tracksCollection := session.DB("paragliding").C("igctracks")
 
 	// Create a track metas abstraction which will connect to mongodb to store
 	// all igctracks
-	trackMetas := igcserver.NewTrackMetasDB(tracksCollection)
+	trackMetas := igcserver.NewTrackMetasDB(mongoSession)
 
 	// Make a http client which the server will use for external requests
 	httpClient := http.Client{}
