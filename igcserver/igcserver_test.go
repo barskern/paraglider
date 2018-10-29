@@ -48,6 +48,7 @@ func makeTestData(serverURL string) []TrackMeta {
 		{
 			NewTrackID([]byte("asd")),
 			time.Now(),
+			time.Now(),
 			"Aladin Special",
 			"Magical Carpet",
 			"MGI2",
@@ -56,6 +57,7 @@ func makeTestData(serverURL string) []TrackMeta {
 		},
 		{
 			NewTrackID([]byte("dsa")),
+			time.Now(),
 			time.Now(),
 			"John Normal",
 			"Boeng 777",
@@ -68,7 +70,7 @@ func makeTestData(serverURL string) []TrackMeta {
 
 // Test GET /
 func TestIgcServerGetMetaValid(t *testing.T) {
-	server := NewServer(nil, nil)
+	server := NewServer(nil, nil, nil)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	res := httptest.NewRecorder()
@@ -96,7 +98,7 @@ func TestIgcServerPostTrackBad(t *testing.T) {
 	defer igcTestServer.Close()
 
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(igcTestServer.Client(), &trackMetasMap)
+	server := NewServer(igcTestServer.Client(), &trackMetasMap, nil)
 
 	for _, body := range []string{
 		fmt.Sprintf("{\"url\":\"%s\"}", igcTestServer.URL+"/invalid.igc"),
@@ -129,7 +131,7 @@ func TestIgcServerPostTrackValid(t *testing.T) {
 	defer igcTestServer.Close()
 
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(igcTestServer.Client(), &trackMetasMap)
+	server := NewServer(igcTestServer.Client(), &trackMetasMap, nil)
 
 	body := fmt.Sprintf("{\"url\":\"%s\"}", igcTestServer.URL+"/test.igc")
 	req := httptest.NewRequest("POST", "/track", bytes.NewReader([]byte(body)))
@@ -171,7 +173,7 @@ func TestIgcServerPostTrackValidDuplicate(t *testing.T) {
 	defer igcTestServer.Close()
 
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(igcTestServer.Client(), &trackMetasMap)
+	server := NewServer(igcTestServer.Client(), &trackMetasMap, nil)
 
 	body := fmt.Sprintf("{\"url\":\"%s\"}", igcTestServer.URL+"/test.igc")
 	req := httptest.NewRequest("POST", "/track", bytes.NewReader([]byte(body)))
@@ -199,7 +201,7 @@ func TestIgcServerPostTrackValidDuplicate(t *testing.T) {
 // Test GET /track
 func TestIgcServerGetTrack(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap)
+	server := NewServer(nil, &trackMetasMap, nil)
 
 	testTrackMetas := makeTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
@@ -237,7 +239,7 @@ outer:
 // Test valid GET /track/<id>
 func TestIgcServerGetTrackByIdValid(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap)
+	server := NewServer(nil, &trackMetasMap, nil)
 
 	testTrackMetas := makeTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
@@ -273,7 +275,7 @@ func TestIgcServerGetTrackByIdValid(t *testing.T) {
 // Test bad GET /track/<id>
 func TestIgcServerGetTrackByIdBad(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap)
+	server := NewServer(nil, &trackMetasMap, nil)
 
 	for _, badID := range []struct {
 		int
@@ -304,7 +306,7 @@ func TestIgcServerGetTrackByIdBad(t *testing.T) {
 // Test valid GET /track/<id>/<field>
 func TestIgcServerGetTrackFieldValid(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap)
+	server := NewServer(nil, &trackMetasMap, nil)
 
 	testTrackMetas := makeTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
@@ -371,7 +373,7 @@ func TestIgcServerGetTrackFieldValid(t *testing.T) {
 // Test bad GET /track/<id>/<field>
 func TestIgcServerGetTrackFieldBad(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap)
+	server := NewServer(nil, &trackMetasMap, nil)
 
 	testTrackMetas := makeTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
@@ -426,7 +428,7 @@ outer:
 // Test different rubbish urls -> 404
 func TestIgcServerGetRubbish(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap)
+	server := NewServer(nil, &trackMetasMap, nil)
 
 	rubbishURLs := []string{
 		"/rubbish",
@@ -457,7 +459,7 @@ func TestIgcServerGetRubbish(t *testing.T) {
 // Test PUT -> 405 response
 func TestIgcServerPutMethod(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap)
+	server := NewServer(nil, &trackMetasMap, nil)
 
 	req := httptest.NewRequest("PUT", "/", nil)
 	res := httptest.NewRecorder()

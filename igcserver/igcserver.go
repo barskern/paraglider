@@ -19,16 +19,20 @@ type Server struct {
 	data        TrackMetas
 	httpClient  *http.Client
 	router      *mux.Router
+	ticker      Ticker
 }
 
 // NewServer creates a new server which handles requests to the igc api
-func NewServer(httpClient *http.Client, trackMetas TrackMetas) (srv Server) {
+func NewServer(httpClient *http.Client, trackMetas TrackMetas, ticker Ticker) (srv Server) {
 	srv = Server{
 		time.Now(),
 		trackMetas,
 		httpClient,
 		mux.NewRouter(),
+		ticker,
 	}
+	srv.router.Use(loggingMiddleware)
+
 	srv.router.HandleFunc("/", srv.metaHandler).Methods(http.MethodGet)
 	srv.router.HandleFunc("/track", srv.trackRegHandler).Methods(http.MethodPost)
 	srv.router.HandleFunc("/track", srv.trackGetAllHandler).Methods(http.MethodGet)
@@ -42,8 +46,6 @@ func NewServer(httpClient *http.Client, trackMetas TrackMetas) (srv Server) {
 		"/track/{id}/{field}",
 		srv.trackGetFieldHandler,
 	).Methods(http.MethodGet)
-
-	srv.router.Use(loggingMiddleware)
 
 	srv.router.MethodNotAllowedHandler =
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

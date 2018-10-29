@@ -49,6 +49,7 @@ func NewTrackID(v []byte) TrackID {
 // ```
 type TrackMeta struct {
 	ID          TrackID   `json:"-" bson:"id"`
+	Timestamp   time.Time `json:"-" bson:"timestamp"`
 	Date        time.Time `json:"H_date" bson:"H_date"`
 	Pilot       string    `json:"pilot" bson:"pilot"`
 	Glider      string    `json:"glider" bson:"glider"`
@@ -69,6 +70,7 @@ func calcTotalDistance(points []igc.Point) (trackLength float64) {
 func TrackMetaFrom(url url.URL, track igc.Track) TrackMeta {
 	return TrackMeta{
 		NewTrackID([]byte(url.String())),
+		time.Now(),
 		track.Date,
 		track.Pilot,
 		track.GliderType,

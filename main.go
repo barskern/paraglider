@@ -54,7 +54,7 @@ func main() {
 	httpClient := http.Client{}
 
 	// Create a new server which encompasses all routing and server state
-	server := igcserver.NewServer(&httpClient, &trackMetas)
+	server := igcserver.NewServer(&httpClient, &trackMetas, nil) // TODO add proper ticker
 
 	// Route all requests to `paragliding/api/` to the server and remove prefix
 	http.Handle("/paragliding/api/", http.StripPrefix("/paragliding/api", &server))
