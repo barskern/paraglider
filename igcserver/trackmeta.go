@@ -61,6 +61,11 @@ func TrackMetaFrom(url url.URL, track igc.Track) TrackMeta {
 	}
 }
 
+// MakeTrackMetaEntry makes a TrackMeta object and an id for a given track/url
+func MakeTrackMetaEntry(url url.URL, track igc.Track) (id TrackID, meta TrackMeta) {
+	return NewTrackID([]byte(url.String())), TrackMetaFrom(url, track)
+}
+
 // TrackMetas is a interface for all storages containing TrackMeta
 type TrackMetas interface {
 	Get(id TrackID) (TrackMeta, bool)

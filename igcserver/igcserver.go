@@ -162,8 +162,7 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create and add new trackmeta object
-	trackMeta := TrackMetaFrom(*reqURL, track)
-	id := NewTrackID([]byte(reqURL.String()))
+	id, trackMeta := MakeTrackMetaEntry(*reqURL, track)
 	err = server.data.Append(id, trackMeta)
 
 	if err != nil {
