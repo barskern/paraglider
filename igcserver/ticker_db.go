@@ -63,14 +63,14 @@ func NewTickerDB(session *mgo.Session, buf int) TickerDB {
 
 // Reporter returns a channel which expects to have timestamps sent to it and
 // it will listen to it and keep the current timestamp updated accordingly
-func (t *TickerDB) Reporter() chan<- time.Time {
-	return t.reporter
+func (t *TickerDB) Reporter(latest time.Time) {
+	t.reporter <- latest
 }
 
 // Latest returns a channel which expects send the current latest timestamp on
 // a request
-func (t *TickerDB) Latest() <-chan *time.Time {
-	return t.publisher
+func (t *TickerDB) Latest() *time.Time {
+	return <-t.publisher
 }
 
 // GetReport returns a report of the oldest registered timestamps with the given limit
@@ -98,7 +98,7 @@ func (t *TickerDB) GetReportAfter(timestamp time.Time, limit int) (rep TickerRep
 		if len(trackMetas) < 1 {
 			err = ErrNoTracksFound
 		} else {
-			latest := <-t.Latest()
+			latest := t.Latest()
 			firststamp := trackMetas[0].Timestamp
 			laststamp := trackMetas[len(trackMetas)-1].Timestamp
 			ids := make([]TrackID, len(trackMetas))

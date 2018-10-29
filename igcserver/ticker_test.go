@@ -41,14 +41,14 @@ func NewTickerDummy(buf int) TickerDummy {
 
 // Reporter returns a channel which expects to have timestamps sent to it and
 // it will listen to it and keep the current timestamp updated accordingly
-func (t *TickerDummy) Reporter() chan<- time.Time {
-	return t.reporter
+func (t *TickerDummy) Reporter(latest time.Time) {
+	t.reporter <- latest
 }
 
 // Latest returns a channel which expects send the current latest timestamp on
 // a request
-func (t *TickerDummy) Latest() <-chan *time.Time {
-	return t.publisher
+func (t *TickerDummy) Latest() *time.Time {
+	return <-t.publisher
 }
 
 // GetReport returns a report of the oldest registered timestamps with the given limit

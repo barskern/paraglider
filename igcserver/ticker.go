@@ -17,8 +17,8 @@ var (
 
 // Ticker is a generic interface for any type which can act as a ticker
 type Ticker interface {
-	Latest() <-chan *time.Time
-	Reporter() chan<- time.Time
+	Latest() *time.Time
+	Reporter(latest time.Time)
 	GetReport(limit int) (TickerReport, error)
 	GetReportAfter(timestamp time.Time, limit int) (TickerReport, error)
 }
@@ -96,7 +96,7 @@ func (server *Server) tickerLatestHandler(w http.ResponseWriter, r *http.Request
 
 	logger.Info("processing request to get latest ticker timestamp")
 
-	latest := <-server.ticker.Latest()
+	latest := server.ticker.Latest()
 	if latest == nil {
 		logger.Info("latest timestamp of request not set")
 		http.Error(w, "content not found", http.StatusNotFound)
