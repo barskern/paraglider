@@ -2,6 +2,7 @@ package igcserver
 
 import (
 	"encoding/json"
+	"github.com/barskern/paragliding/isodur"
 	"github.com/gorilla/mux"
 	"github.com/marni/goigc"
 	log "github.com/sirupsen/logrus"
@@ -92,7 +93,7 @@ func (server *Server) metaHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
 
 	metadata := map[string]interface{}{
-		"uptime":  FormatAsISO8601(time.Since(server.startupTime)),
+		"uptime":  isodur.FormatAsISO8601(time.Since(server.startupTime)),
 		"info":    "Service for Paragliding tracks.",
 		"version": "v1",
 	}

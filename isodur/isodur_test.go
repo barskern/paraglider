@@ -1,4 +1,4 @@
-package igcserver
+package isodur
 
 import (
 	"testing"
