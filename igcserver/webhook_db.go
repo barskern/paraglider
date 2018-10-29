@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 )
 
 const (
-	webhookCollection = "db"
+	webhookCollection = "webhooks"
 )
 
 // WebhooksDB contains a map to many WebhookInfo objects which are protected
@@ -31,11 +32,12 @@ type DiscordMsg struct {
 func NewDiscordMsg(latest time.Time, ids []TrackID, processing time.Duration) DiscordMsg {
 	return DiscordMsg{
 		fmt.Sprintf(
-			"Latest timestamp: %s, %d new tracks are: %v. (processing: %dms)",
+			"Latest timestamp is %s and the %d new tracks are: %v (processing: %ds %dms)",
 			latest.Format(time.RFC3339),
 			len(ids),
 			ids,
-			processing.Nanoseconds()/1000,
+			int(processing.Seconds()),
+			(processing.Nanoseconds()/1000)%1000,
 		),
 	}
 }
@@ -52,7 +54,8 @@ func NewWebhooksDB(session *mgo.Session, httpClient *http.Client) WebhooksDB {
 			iter := conn.DB("").C(webhookCollection).Find(nil).Iter()
 			var webhook WebhookInfo
 			for iter.Next(&webhook) {
-				go updateWebhook(conn.Copy(), httpClient, webhook)
+				log.WithField("webhook", webhook).Info("checking if update is needed for webhook")
+				go updateWebhook(session.Copy(), httpClient, webhook)
 			}
 			iter.Close()
 		}
@@ -76,29 +79,34 @@ func updateWebhook(conn *mgo.Session, httpClient *http.Client, webhook WebhookIn
 		Sort("timestamp").
 		All(&trackMetas)
 
-	if err == nil {
-		if len(trackMetas) < 1 {
-			err = ErrNoTracksFound
-		} else {
-			laststamp := trackMetas[len(trackMetas)-1].Timestamp
-			ids := make([]TrackID, len(trackMetas))
-			for i, meta := range trackMetas {
-				ids[i] = meta.ID
-			}
-			processing := time.Since(start)
-			msg := NewDiscordMsg(laststamp, ids, processing)
+	weblog := log.WithField("webhook", webhook)
 
-			b := new(bytes.Buffer)
-			json.NewEncoder(b).Encode(msg)
-
-			httpClient.Post(webhook.URLstr, "application/json", b)
-
-			// Update last triggered for current webhook
-			err = conn.DB("").C(webhookCollection).
-				Update(bson.M{"id": webhook.ID}, bson.M{"lastTriggered": laststamp})
-		}
+	if err != nil {
+		weblog.WithField("error", err).Error("unable to get track metas after given timestamp")
 	}
 
+	if len(trackMetas) >= int(webhook.TriggerRate) {
+		laststamp := trackMetas[len(trackMetas)-1].Timestamp
+		ids := make([]TrackID, len(trackMetas))
+		for i, meta := range trackMetas {
+			ids[i] = meta.ID
+		}
+		processing := time.Since(start)
+		msg := NewDiscordMsg(laststamp, ids, processing)
+
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(msg)
+
+		weblog.WithField("msg", msg).Info("sending update to webhook")
+		httpClient.Post(webhook.URLstr, "application/json", b)
+
+		// Update last triggered for current webhook
+		webhook.LastTriggered = laststamp
+		err = conn.DB("").C(webhookCollection).
+			Update(bson.M{"id": webhook.ID}, webhook)
+	} else {
+		weblog.Info("update not needed for webhook")
+	}
 }
 
 // Trigger returns a channel to trigger webhooks based on the number of tracks
