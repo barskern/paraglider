@@ -51,7 +51,7 @@ func TestTrackMetasGet(t *testing.T) {
 	}
 
 	for _, pureID := range ids {
-		if _, ok := metas.Get(pureID); !ok {
+		if _, ok, _ := metas.Get(pureID); !ok {
 			t.Fatalf("didn't find id '%d' in result of 'GetAllIDs'", pureID)
 		}
 	}
@@ -85,7 +85,7 @@ func TestTrackMetasGetConcurr(t *testing.T) {
 	for _, pureID := range ids {
 		wg.Add(1)
 		go func(metas *TrackMetasMap, id TrackID) {
-			if _, ok := metas.Get(id); !ok {
+			if _, ok, _ := metas.Get(id); !ok {
 				t.Fatalf("didn't find id '%d' in result of 'GetAllIDs'", id)
 			}
 			wg.Done()
@@ -119,7 +119,8 @@ func TestTrackMetasGetAllIDs(t *testing.T) {
 
 	for _, pureID := range ids {
 		found := false
-		for _, metaID := range metas.GetAllIDs() {
+		metaIDs, _ := metas.GetAllIDs()
+		for _, metaID := range metaIDs {
 			if pureID == metaID {
 				found = true
 				break

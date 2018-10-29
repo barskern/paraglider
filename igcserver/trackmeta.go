@@ -9,9 +9,9 @@ import (
 
 // TrackMetas is a interface for all storages containing TrackMeta
 type TrackMetas interface {
-	Get(id TrackID) (TrackMeta, bool)
+	Get(id TrackID) (TrackMeta, bool, error)
 	Append(meta TrackMeta) error
-	GetAllIDs() []TrackID
+	GetAllIDs() ([]TrackID, error)
 }
 
 // TrackID is a unique id for a track

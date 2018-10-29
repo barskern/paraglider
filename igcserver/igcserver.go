@@ -165,7 +165,6 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 	// Create and add new trackmeta object
 	trackMeta := TrackMetaFrom(*reqURL, track)
 	err = server.data.Append(trackMeta)
-
 	if err != nil {
 		logger.WithFields(log.Fields{
 			"trackmeta": trackMeta,
@@ -199,7 +198,12 @@ type TrackRegRequest struct {
 func (server *Server) trackGetAllHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
 
-	ids := server.data.GetAllIDs()
+	ids, err := server.data.GetAllIDs()
+	if err != nil {
+		logger.WithField("error", err).Error("unable to respond to request of all IDs")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	logger.WithField("ids", ids).Info("responding to request with all ids")
 	json.NewEncoder(w).Encode(ids)
 }
@@ -228,15 +232,20 @@ func (server *Server) trackGetHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid id", http.StatusBadRequest)
 		return
 	}
-	meta, ok := server.data.Get(TrackID(id))
+	idlog := logger.WithField("id", id)
+	meta, ok, err := server.data.Get(TrackID(id))
+	if err != nil {
+		idlog.WithField("error", err).Info("error when getting metadata of id")
+		http.Error(w, "internal server error occured", http.StatusInternalServerError)
+		return
+	}
 	if !ok {
-		logger.WithField("id", id).Info("unable to find metadata of id")
+		idlog.Info("unable to find metadata of id")
 		http.Error(w, "content not found", http.StatusNotFound)
 		return
 	}
 	logger.WithFields(log.Fields{
 		"trackmeta": meta,
-		"id":        id,
 	}).Info("responding with track meta for given id")
 	json.NewEncoder(w).Encode(meta)
 }
@@ -258,7 +267,12 @@ func (server *Server) trackGetFieldHandler(w http.ResponseWriter, r *http.Reques
 	field, _ := vars["field"]
 	idlog := logger.WithField("id", id)
 
-	meta, ok := server.data.Get(TrackID(id))
+	meta, ok, err := server.data.Get(TrackID(id))
+	if err != nil {
+		idlog.WithField("error", err).Info("error when getting metadata of id")
+		http.Error(w, "internal server error occured", http.StatusInternalServerError)
+		return
+	}
 	if !ok {
 		idlog.Info("unable to find metadata of id")
 		http.Error(w, "content not found", http.StatusNotFound)

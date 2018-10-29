@@ -18,11 +18,11 @@ func NewTrackMetasMap() TrackMetasMap {
 }
 
 // Get fetches the track meta of a specific id if it exists
-func (metas *TrackMetasMap) Get(id TrackID) (TrackMeta, bool) {
+func (metas *TrackMetasMap) Get(id TrackID) (TrackMeta, bool, error) {
 	metas.RLock()
 	defer metas.RUnlock()
 	v, ok := metas.data[id]
-	return v, ok
+	return v, ok, nil
 }
 
 // Append appends a track meta and returns the given id
@@ -37,12 +37,12 @@ func (metas *TrackMetasMap) Append(meta TrackMeta) error {
 }
 
 // GetAllIDs fetches all the stored ids
-func (metas *TrackMetasMap) GetAllIDs() []TrackID {
+func (metas *TrackMetasMap) GetAllIDs() ([]TrackID, error) {
 	metas.RLock()
 	defer metas.RUnlock()
 	keys := make([]TrackID, 0, len(metas.data))
 	for k := range metas.data {
 		keys = append(keys, k)
 	}
-	return keys
+	return keys, nil
 }
