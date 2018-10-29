@@ -10,7 +10,7 @@
 
 I chose to use [globalsign/mgo](https://github.com/globalsign/mgo) because it had solid documentation and was not as rough around the edges as the official API for MongoDB.
 
-I tried to have conncurrency in mind while designing this system, hence I tried to use channels and non-blocking actions were I could.
+I tried to have concurrency in mind while designing this system, hence I tried to use channels and non-blocking actions were I could.
 
 
 # About
