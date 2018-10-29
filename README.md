@@ -13,7 +13,7 @@ An online service that will allow users to browse information about IGC files. I
 
 The service will store IGC files metadata in a NoSQL Database (persistent storage). The system will generate events, which can be subscribed to using webhooks, and it will monitor for new events happening from the outside services.
 
-# API-endpoints
+# IGC-Tracks API
 
 ## `GET /paragliding/api`
 
@@ -80,11 +80,13 @@ Possible `<field>`-values:
 
 The response will be formatted as plain text.
 
-## `GET /api/ticker/latest`
+# Ticker API
+
+## `GET /paragliding/api/ticker/latest`
 
 Returns the `timestamp` (formatted as specified in RFC3339) of the last added track as plain text.
 
-## `GET /api/ticker/`
+## `GET /paragliding/api/ticker/`
 
 Returns a report of the oldest tracks added.
 
@@ -98,7 +100,7 @@ Returns a report of the oldest tracks added.
 }
 ```
 
-## `GET /api/ticker/<timestamp>`
+## `GET /paragliding/api/ticker/<timestamp>`
 
 Returns a report of the added tracks after a certain timestamp (formatted as specified in RFC3339).
 
@@ -111,3 +113,30 @@ Returns a report of the added tracks after a certain timestamp (formatted as spe
 "processing": <time in ms of how long it took to process the request>
 }
 ```
+
+# Webhook API
+
+## `POST /paragliding/api/webhook/new_track`
+
+Register a webhook which will be notified when new tracks are added to the service.
+
+### Request
+
+```
+{
+"webhookURL": <url to the webhook>,
+"minTriggerValue": <minimun added tracks before a notification is sent>
+}
+```
+
+### Response
+
+The response will be the unique `<webhook_id>` for the current webhook, sent as a plain text response.
+
+## `GET /paragliding/api/webhook/new_track/<webhook_id>`
+
+Get details about the webhook with the given `<webhook_id>`.
+
+## `DELETE /paragliding/api/webhook/new_track/<webhook_id>`
+
+Delete the webhook subscription specified by the given `<webhook_id>`.
