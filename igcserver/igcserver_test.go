@@ -198,7 +198,8 @@ func TestIgcServerGetTrack(t *testing.T) {
 	testTrackMetas := makeTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
 	for _, trackMeta := range testTrackMetas {
-		id, err := server.data.Append(trackMeta)
+		id := NewTrackID([]byte(trackMeta.TrackSrcURL))
+		err := server.data.Append(id, trackMeta)
 		if err != nil {
 			t.Errorf("unable to add metadata: %s", err)
 			continue
@@ -235,12 +236,13 @@ func TestIgcServerGetTrackByIdValid(t *testing.T) {
 	testTrackMetas := makeTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
 	for _, trackMeta := range testTrackMetas {
-		meta, err := server.data.Append(trackMeta)
+		id := NewTrackID([]byte(trackMeta.TrackSrcURL))
+		err := server.data.Append(id, trackMeta)
 		if err != nil {
 			t.Errorf("unable to add metadata: %s", err)
 			continue
 		}
-		ids = append(ids, meta)
+		ids = append(ids, id)
 	}
 
 	for i, id := range ids {
@@ -300,12 +302,13 @@ func TestIgcServerGetTrackFieldValid(t *testing.T) {
 	testTrackMetas := makeTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
 	for _, trackMeta := range testTrackMetas {
-		meta, err := server.data.Append(trackMeta)
+		id := NewTrackID([]byte(trackMeta.TrackSrcURL))
+		err := server.data.Append(id, trackMeta)
 		if err != nil {
 			t.Errorf("unable to add metadata: %s", err)
 			continue
 		}
-		ids = append(ids, meta)
+		ids = append(ids, id)
 	}
 
 	for i, id := range ids {
@@ -366,12 +369,13 @@ func TestIgcServerGetTrackFieldBad(t *testing.T) {
 	testTrackMetas := makeTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
 	for _, trackMeta := range testTrackMetas {
-		meta, err := server.data.Append(trackMeta)
+		id := NewTrackID([]byte(trackMeta.TrackSrcURL))
+		err := server.data.Append(id, trackMeta)
 		if err != nil {
 			t.Errorf("unable to add metadata: %s", err)
 			continue
 		}
-		ids = append(ids, meta)
+		ids = append(ids, id)
 	}
 
 	var unknownID TrackID

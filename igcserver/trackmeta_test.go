@@ -15,13 +15,14 @@ func TestTrackMetaDuplicate(t *testing.T) {
 	metas := NewTrackMetasMap()
 
 	var err error
-	_, err = metas.Append(meta)
+	id := NewTrackID([]byte(meta.TrackSrcURL))
+	err = metas.Append(id, meta)
 	if err != nil {
 		t.Fatalf("unable to add metadata: %s", err)
 	}
-	_, err = metas.Append(meta)
+	err = metas.Append(id, meta)
 	if err == nil {
-		t.Fatalf("same track meta can be registered twice")
+		t.Fatalf("same track meta duplicate track ids should be rejected")
 	}
 }
 
@@ -42,7 +43,8 @@ func TestTrackMetasGet(t *testing.T) {
 	var ids [metaCount]TrackID
 	var err error
 	for i, v := range pureMetas {
-		ids[i], err = metas.Append(v)
+		ids[i] = NewTrackID([]byte(v.TrackSrcURL))
+		err = metas.Append(ids[i], v)
 		if err != nil {
 			t.Fatalf("unable to add metadata: %s", err)
 			continue
@@ -73,7 +75,8 @@ func TestTrackMetasGetConcurr(t *testing.T) {
 	var ids [metaCount]TrackID
 	var err error
 	for i, v := range pureMetas {
-		ids[i], err = metas.Append(v)
+		ids[i] = NewTrackID([]byte(v.TrackSrcURL))
+		err = metas.Append(ids[i], v)
 		if err != nil {
 			t.Fatalf("unable to add metadata: %s", err)
 		}
@@ -108,7 +111,8 @@ func TestTrackMetasGetAllIDs(t *testing.T) {
 	var ids [metaCount]TrackID
 	var err error
 	for i, v := range pureMetas {
-		ids[i], err = metas.Append(v)
+		ids[i] = NewTrackID([]byte(v.TrackSrcURL))
+		err = metas.Append(ids[i], v)
 		if err != nil {
 			t.Fatalf("unable to add metadata: %s", err)
 		}

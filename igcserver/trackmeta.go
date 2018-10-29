@@ -64,7 +64,7 @@ func TrackMetaFrom(url url.URL, track igc.Track) TrackMeta {
 // TrackMetas is a interface for all storages containing TrackMeta
 type TrackMetas interface {
 	Get(id TrackID) (TrackMeta, bool)
-	Append(meta TrackMeta) (TrackID, error)
+	Append(id TrackID, meta TrackMeta) error
 	GetAllIDs() []TrackID
 }
 
@@ -89,15 +89,14 @@ func (metas *TrackMetasMap) Get(id TrackID) (TrackMeta, bool) {
 }
 
 // Append appends a track meta and returns the given id
-func (metas *TrackMetasMap) Append(meta TrackMeta) (TrackID, error) {
-	id := NewTrackID([]byte(meta.TrackSrcURL))
+func (metas *TrackMetasMap) Append(id TrackID, meta TrackMeta) error {
 	metas.Lock()
 	defer metas.Unlock()
-	if _, exists := metas.data[id]; !exists {
-		metas.data[id] = meta
-		return id, nil
+	if _, exists := metas.data[id]; exists {
+		return errors.New("trackmeta with same url already exists")
 	}
-	return 0, errors.New("trackmeta with same url already exists")
+	metas.data[id] = meta
+	return nil
 }
 
 // GetAllIDs fetches all the stored ids
