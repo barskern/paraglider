@@ -15,7 +15,7 @@ type TrackMetas interface {
 }
 
 // TrackID is a unique id for a track
-type TrackID uint32
+type TrackID interface{}
 
 // NewTrackID creates a new unique track ID
 func NewTrackID(v []byte) TrackID {
