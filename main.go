@@ -46,18 +46,22 @@ func main() {
 		}).Fatal("unable to connect to mongo db")
 	}
 
-	// Create a track metas abstraction which will connect to mongodb to store
-	// all igctracks
-	trackMetas := igcserver.NewTrackMetasDB(mongoSession)
-
 	// Make a http client which the server will use for external requests
 	httpClient := http.Client{}
 
+	// Create a track metas abstraction which will connect to mongodb to store
+	// all igctracks
+	trackMetas := igcserver.NewTrackMetasDB(mongoSession.Copy())
+
+	// Create a webhooks abstraction which will connect to a mongodb to store
+	// all webhooks
+	webhooks := igcserver.NewWebhooksDB(mongoSession.Copy())
+
 	// Make simple ticker for database
-	ticker := igcserver.NewTickerDB(mongoSession, 10)
+	ticker := igcserver.NewTickerDB(mongoSession.Copy(), 10)
 
 	// Create a new server which encompasses all routing and server state
-	server := igcserver.NewServer(&httpClient, &trackMetas, &ticker) // TODO add proper ticker
+	server := igcserver.NewServer(&httpClient, &trackMetas, &ticker, &webhooks)
 
 	// Route all requests to `paragliding/api/` to the server and remove prefix
 	http.Handle("/paragliding/api/", http.StripPrefix("/paragliding/api", &server))
@@ -65,6 +69,8 @@ func main() {
 
 	// This function will block the current thread
 	err = http.ListenAndServe(":"+port, nil)
+
+	mongoSession.Close()
 
 	// We will only get to this statement if the server unexpectedly crashes
 	log.WithFields(log.Fields{

@@ -7,6 +7,7 @@ import (
 	"github.com/marni/goigc"
 	log "github.com/sirupsen/logrus"
 	"hash/fnv"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -260,22 +261,22 @@ func (server *Server) trackGetFieldHandler(w http.ResponseWriter, r *http.Reques
 	switch field {
 	case "H_date":
 		flog.Info("responding with track date")
-		w.Write([]byte(meta.Date.Format(time.RFC3339)))
+		io.WriteString(w, meta.Date.Format(time.RFC3339))
 	case "pilot":
 		flog.Info("responding with track pilot")
-		w.Write([]byte(meta.Pilot))
+		io.WriteString(w, meta.Pilot)
 	case "glider":
 		flog.Info("responding with track glider")
-		w.Write([]byte(meta.Glider))
+		io.WriteString(w, meta.Glider)
 	case "glider_id":
 		flog.Info("responding with track glider id")
-		w.Write([]byte(meta.GliderID))
+		io.WriteString(w, meta.GliderID)
 	case "track_length":
 		flog.Info("responding with track length")
-		w.Write([]byte(strconv.FormatFloat(meta.TrackLength, 'f', -1, 64)))
+		io.WriteString(w, strconv.FormatFloat(meta.TrackLength, 'f', -1, 64))
 	case "track_src_url":
 		flog.Info("responding with track src url")
-		w.Write([]byte(meta.TrackSrcURL))
+		io.WriteString(w, meta.TrackSrcURL)
 	default:
 		flog.Info("unable to find field of metadata")
 		http.Error(w, "invalid field", http.StatusBadRequest)

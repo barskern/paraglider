@@ -3,9 +3,11 @@ package igcserver
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"hash/fnv"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -56,7 +58,7 @@ func (server *Server) webhookRegHandler(w http.ResponseWriter, r *http.Request) 
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 
-	var webhook WebhookInfo
+	webhook := WebhookInfo{Trigger: 1}
 	if err := dec.Decode(&webhook); err != nil {
 		logger.WithField("error", err).Info("unable to decode request body")
 		http.Error(w, "invalid json object", http.StatusBadRequest)
@@ -93,7 +95,7 @@ func (server *Server) webhookRegHandler(w http.ResponseWriter, r *http.Request) 
 		"webhook": webhook,
 	}).Info("added webhook")
 
-	w.Write([]byte(string(webhook.ID)))
+	io.WriteString(w, fmt.Sprintf("%d", webhook.ID))
 }
 
 func (server *Server) webhookGetHandler(w http.ResponseWriter, r *http.Request) {

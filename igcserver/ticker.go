@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
+	"io"
 	"net/http"
 	"time"
 )
@@ -102,5 +103,5 @@ func (server *Server) tickerLatestHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	logger.WithField("latest", latest).Info("responding with latest timestamp")
-	w.Write([]byte(latest.Format(time.RFC3339)))
+	io.WriteString(w, latest.Format(time.RFC3339))
 }
