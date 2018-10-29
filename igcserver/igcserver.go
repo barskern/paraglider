@@ -23,11 +23,10 @@ type Server struct {
 }
 
 // NewServer creates a new server which handles requests to the igc api
-func NewServer(httpClient *http.Client) (srv Server) {
-	trackMetas := NewTrackMetasMap()
+func NewServer(httpClient *http.Client, trackMetas TrackMetas) (srv Server) {
 	srv = Server{
 		time.Now(),
-		&trackMetas,
+		trackMetas,
 		httpClient,
 		mux.NewRouter(),
 	}
@@ -201,7 +200,7 @@ func (server *Server) trackGetAllHandler(w http.ResponseWriter, r *http.Request)
 	ids, err := server.data.GetAllIDs()
 	if err != nil {
 		logger.WithField("error", err).Error("unable to respond to request of all IDs")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal server error occured", http.StatusInternalServerError)
 		return
 	}
 	logger.WithField("ids", ids).Info("responding to request with all ids")

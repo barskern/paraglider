@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/barskern/paragliding/igcserver"
+	"github.com/globalsign/mgo"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -21,10 +22,15 @@ func main() {
 		}
 	}
 
-	// Get port from environment
+	// Get port from env
 	port, ok := os.LookupEnv("PORT")
 	if !ok {
 		port = "8080"
+	}
+	// Get mongodb url from env
+	mongoURL, ok := os.LookupEnv("MONGODB_URI")
+	if !ok {
+		log.Fatal("unable to get required envvar 'MONGODB_URI'")
 	}
 
 	log.WithFields(log.Fields{
@@ -32,23 +38,33 @@ func main() {
 		"logLevel": log.GetLevel(),
 	}).Info("initializing server")
 
-	// Make a http client which the server will use for external requests
-	// (dependency injection)
-	httpClient := http.Client{}
-	// Create a new server which encompasses all state
-	server := igcserver.NewServer(&httpClient)
+	session, err := mgo.Dial(mongoURL)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"uri":   mongoURL,
+			"error": err,
+		}).Fatal("unable to connect to mongo db")
+	}
+	tracksCollection := session.DB("paragliding").C("igctracks")
 
-	// Route all requests to `paragliding/api/` to the api-server
-	//
-	// Remove prefix `/paragliding/api/` (api server shouldn't care where its
-	// mounted)
+	// Create a track metas abstraction which will connect to mongodb to store
+	// all igctracks
+	trackMetas := igcserver.NewTrackMetasDB(tracksCollection)
+
+	// Make a http client which the server will use for external requests
+	httpClient := http.Client{}
+
+	// Create a new server which encompasses all routing and server state
+	server := igcserver.NewServer(&httpClient, &trackMetas)
+
+	// Route all requests to `paragliding/api/` to the server and remove prefix
 	http.Handle("/paragliding/api/", http.StripPrefix("/paragliding/api", &server))
 
 	// This function will block the current thread
-	err := http.ListenAndServe(":"+port, nil)
+	err = http.ListenAndServe(":"+port, nil)
 
 	// We will only get to this statement if the server unexpectedly crashes
 	log.WithFields(log.Fields{
-		"cause": err,
+		"error": err,
 	}).Fatal("server error occurred")
 }
