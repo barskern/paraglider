@@ -33,15 +33,19 @@ func NewServer(httpClient *http.Client, trackMetas TrackMetas, ticker Ticker) (s
 	}
 	srv.router.Use(loggingMiddleware)
 
+	// Ticker API
+	srv.router.HandleFunc("/ticker", srv.tickerHandler).Methods(http.MethodGet)
+	srv.router.HandleFunc("/ticker/latest", srv.tickerLatestHandler).Methods(http.MethodGet)
+	srv.router.HandleFunc("/ticker/{timestamp}", srv.tickerAfterHandler).Methods(http.MethodGet)
+
+	// Igc track API
 	srv.router.HandleFunc("/", srv.metaHandler).Methods(http.MethodGet)
 	srv.router.HandleFunc("/track", srv.trackRegHandler).Methods(http.MethodPost)
 	srv.router.HandleFunc("/track", srv.trackGetAllHandler).Methods(http.MethodGet)
-
 	srv.router.HandleFunc(
 		"/track/{id}",
 		srv.trackGetHandler,
 	).Methods(http.MethodGet)
-
 	srv.router.HandleFunc(
 		"/track/{id}/{field}",
 		srv.trackGetFieldHandler,
@@ -86,6 +90,62 @@ func newReqLogger(r *http.Request) *log.Entry {
 		"path":   r.URL.Path,
 		"addr":   r.RemoteAddr,
 	})
+}
+
+func (server *Server) tickerHandler(w http.ResponseWriter, r *http.Request) {
+	logger := newReqLogger(r)
+
+	report, err := server.ticker.GetReport(5)
+	if err == ErrNoTracksFound {
+		logger.WithField("error", err).Info("no tracks registered")
+		http.Error(w, "content not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		logger.WithField("error", err).Info("unable to build ticker report")
+		http.Error(w, "internal server error occurred", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(report)
+}
+
+func (server *Server) tickerAfterHandler(w http.ResponseWriter, r *http.Request) {
+	logger := newReqLogger(r)
+
+	vars := mux.Vars(r)
+	timestampStr, _ := vars["timestamp"]
+	timestamp, err := time.Parse(time.RFC3339, timestampStr)
+	if err != nil {
+		logger.WithField("error", err).Info("unable to parse as timestamp")
+		http.Error(w, "invalid timestamp", http.StatusBadRequest)
+		return
+	}
+
+	report, err := server.ticker.GetReportAfter(timestamp, 5)
+	if err == ErrNoTracksFound {
+		logger.WithField("error", err).Info("no tracks registered")
+		http.Error(w, "content not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		logger.WithField("error", err).Info("unable to build ticker report")
+		http.Error(w, "internal server error occurred", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(report)
+}
+
+func (server *Server) tickerLatestHandler(w http.ResponseWriter, r *http.Request) {
+	logger := newReqLogger(r)
+
+	latest := <-server.ticker.Latest()
+	if latest == nil {
+		logger.Info("latest timestamp of request not set")
+		http.Error(w, "content not found", http.StatusNotFound)
+		return
+	}
+	logger.WithField("latest", latest).Info("responding with latest timestamp")
+	w.Write([]byte(latest.String()))
 }
 
 // metaHandler returns the metadata about the api endpoint
@@ -188,6 +248,9 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error occurred", http.StatusInternalServerError)
 		return
 	}
+
+	// Send the ticker information that we just added a track
+	server.ticker.Reporter() <- trackMeta.Timestamp
 
 	result := map[string]interface{}{
 		"id": trackMeta.ID,

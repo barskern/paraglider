@@ -53,12 +53,15 @@ func main() {
 	// Make a http client which the server will use for external requests
 	httpClient := http.Client{}
 
+	// Make simple ticker for database
+	ticker := igcserver.NewTickerDB(mongoSession, 10)
+
 	// Create a new server which encompasses all routing and server state
-	server := igcserver.NewServer(&httpClient, &trackMetas, nil) // TODO add proper ticker
+	server := igcserver.NewServer(&httpClient, &trackMetas, &ticker) // TODO add proper ticker
 
 	// Route all requests to `paragliding/api/` to the server and remove prefix
 	http.Handle("/paragliding/api/", http.StripPrefix("/paragliding/api", &server))
-	http.Handle("/paragliding/", http.RedirectHandler("/paragliding/api/", http.StatusMovedPermanently))
+	http.Handle("/paragliding", http.RedirectHandler("/paragliding/api/", http.StatusMovedPermanently))
 
 	// This function will block the current thread
 	err = http.ListenAndServe(":"+port, nil)

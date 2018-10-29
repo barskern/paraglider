@@ -3,6 +3,7 @@ package igcserver
 import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -25,6 +26,23 @@ func NewTickerDB(session *mgo.Session, buf int) TickerDB {
 		reporter,
 	}
 
+	// Initialize ticker.latest from DB on remake
+	conn := ticker.session.Copy()
+	defer conn.Close()
+	tracks := conn.DB("").C(trackCollection)
+
+	var meta TrackMeta
+	err := tracks.
+		Find(nil).
+		Sort("-timestamp").
+		One(&meta)
+
+	if err == nil {
+		ticker.latest = &meta.Timestamp
+	} else {
+		log.Warn("unable to get initial timestamp from database")
+	}
+
 	// Handle all requests and responses to get latest ticker value. Doesn't
 	// need a mutex because all accesses to ticker.latest is done in the
 	// following goroutine
@@ -32,7 +50,8 @@ func NewTickerDB(session *mgo.Session, buf int) TickerDB {
 		for {
 			select {
 			// We received a new latest value
-			case *ticker.latest = <-reporter:
+			case latest := <-reporter:
+				ticker.latest = &latest
 			// A user asked for the latest value so we send it
 			case publisher <- ticker.latest:
 			}
@@ -73,7 +92,7 @@ func (t *TickerDB) GetReportAfter(timestamp time.Time, limit int) (rep TickerRep
 		Find(bson.M{"timestamp": bson.M{"$gt": timestamp}}).
 		Limit(limit).
 		Sort("timestamp").
-		All(trackMetas)
+		All(&trackMetas)
 
 	if err == nil {
 		if len(trackMetas) < 1 {

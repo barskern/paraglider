@@ -17,7 +17,7 @@ import (
 
 // Convenience function to create a simple igc-file hosting server which hosts
 // two files, one valid 'test.igc' and an invalid 'invalid.igc'
-func makeIgcTestServer() *httptest.Server {
+func makeIgcFileServer() *httptest.Server {
 	return httptest.NewUnstartedServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.RequestURI == "/test.igc" {
@@ -68,8 +68,25 @@ func makeTestData(serverURL string) []TrackMeta {
 	}
 }
 
+func makeTestServers() (server Server, igcFileServer *httptest.Server) {
+	// Setup a simple igc-file hosting server
+	igcFileServer = makeIgcFileServer()
+	igcFileServer.Start()
+
+	// Setup in-memory track metas
+	trackMetasMap := NewTrackMetasMap()
+
+	// Setup a dummy ticker
+	ticker := NewTickerDummy(2)
+
+	// Initialize main API server
+	server = NewServer(igcFileServer.Client(), &trackMetasMap, &ticker)
+	return
+}
+
 // Test GET /
 func TestIgcServerGetMetaValid(t *testing.T) {
+	// We don't need any extra deps to test metadata
 	server := NewServer(nil, nil, nil)
 
 	req := httptest.NewRequest("GET", "/", nil)
@@ -91,24 +108,18 @@ func TestIgcServerGetMetaValid(t *testing.T) {
 
 // Test bad POST /track
 func TestIgcServerPostTrackBad(t *testing.T) {
-
-	// Setup a simple igc-file hosting server
-	igcTestServer := makeIgcTestServer()
-	igcTestServer.Start()
-	defer igcTestServer.Close()
-
-	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(igcTestServer.Client(), &trackMetasMap, nil)
+	server, fileserver := makeTestServers()
+	defer fileserver.Close()
 
 	for _, body := range []string{
-		fmt.Sprintf("{\"url\":\"%s\"}", igcTestServer.URL+"/invalid.igc"),
-		fmt.Sprintf("{\"url\":\"%s\"}", igcTestServer.URL+"/missing.igc"),
+		fmt.Sprintf("{\"url\":\"%s\"}", fileserver.URL+"/invalid.igc"),
+		fmt.Sprintf("{\"url\":\"%s\"}", fileserver.URL+"/missing.igc"),
 		fmt.Sprintf("{\"url\":\"%s\"}", "asfd££@@1££¡@3invalidasULR"),
 		"{\"url\":null}",
 		"{\"url\":\"  a:b:c:d@a:b:©:1\"}",
-		fmt.Sprintf("{\"l\":\"%s\"}", igcTestServer.URL+"/aa.igc"),
-		fmt.Sprintf("\"l\":\"%s\"}", igcTestServer.URL+"/bb.igc"),
-		fmt.Sprintf("{\"l\":\"%s\", asdf asdf}", igcTestServer.URL+"/cc.igc"),
+		fmt.Sprintf("{\"l\":\"%s\"}", fileserver.URL+"/aa.igc"),
+		fmt.Sprintf("\"l\":\"%s\"}", fileserver.URL+"/bb.igc"),
+		fmt.Sprintf("{\"l\":\"%s\", asdf asdf}", fileserver.URL+"/cc.igc"),
 	} {
 		req := httptest.NewRequest("POST", "/track", bytes.NewReader([]byte(body)))
 		res := httptest.NewRecorder()
@@ -124,16 +135,10 @@ func TestIgcServerPostTrackBad(t *testing.T) {
 
 // Test valid POST /track
 func TestIgcServerPostTrackValid(t *testing.T) {
+	server, fileserver := makeTestServers()
+	defer fileserver.Close()
 
-	// Setup a simple igc-file hosting server
-	igcTestServer := makeIgcTestServer()
-	igcTestServer.Start()
-	defer igcTestServer.Close()
-
-	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(igcTestServer.Client(), &trackMetasMap, nil)
-
-	body := fmt.Sprintf("{\"url\":\"%s\"}", igcTestServer.URL+"/test.igc")
+	body := fmt.Sprintf("{\"url\":\"%s\"}", fileserver.URL+"/test.igc")
 	req := httptest.NewRequest("POST", "/track", bytes.NewReader([]byte(body)))
 	res := httptest.NewRecorder()
 
@@ -166,16 +171,10 @@ func TestIgcServerPostTrackValid(t *testing.T) {
 
 // Test valid POST /track
 func TestIgcServerPostTrackValidDuplicate(t *testing.T) {
+	server, fileserver := makeTestServers()
+	defer fileserver.Close()
 
-	// Setup a simple igc-file hosting server
-	igcTestServer := makeIgcTestServer()
-	igcTestServer.Start()
-	defer igcTestServer.Close()
-
-	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(igcTestServer.Client(), &trackMetasMap, nil)
-
-	body := fmt.Sprintf("{\"url\":\"%s\"}", igcTestServer.URL+"/test.igc")
+	body := fmt.Sprintf("{\"url\":\"%s\"}", fileserver.URL+"/test.igc")
 	req := httptest.NewRequest("POST", "/track", bytes.NewReader([]byte(body)))
 	res := httptest.NewRecorder()
 
@@ -427,8 +426,7 @@ outer:
 
 // Test different rubbish urls -> 404
 func TestIgcServerGetRubbish(t *testing.T) {
-	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap, nil)
+	server := NewServer(nil, nil, nil)
 
 	rubbishURLs := []string{
 		"/rubbish",
@@ -458,8 +456,7 @@ func TestIgcServerGetRubbish(t *testing.T) {
 
 // Test PUT -> 405 response
 func TestIgcServerPutMethod(t *testing.T) {
-	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap, nil)
+	server := NewServer(nil, nil, nil)
 
 	req := httptest.NewRequest("PUT", "/", nil)
 	res := httptest.NewRecorder()
