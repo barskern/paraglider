@@ -145,7 +145,7 @@ func (server *Server) tickerLatestHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	logger.WithField("latest", latest).Info("responding with latest timestamp")
-	w.Write([]byte(latest.String()))
+	w.Write([]byte(latest.Format(time.RFC3339)))
 }
 
 // metaHandler returns the metadata about the api endpoint
