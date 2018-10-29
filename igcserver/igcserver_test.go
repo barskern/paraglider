@@ -43,7 +43,25 @@ func makeIgcFileServer() *httptest.Server {
 }
 
 // Convenience function to create testdata to insert into the database
-func makeTestData(serverURL string) []TrackMeta {
+func makeWebhooksTestData() []WebhookInfo {
+	return []WebhookInfo{
+		{
+			NewWebhookID([]byte("asd")),
+			"http://unique.com",
+			1,
+			time.Now(),
+		},
+		{
+			NewWebhookID([]byte("dsa")),
+			"http://unique2.com",
+			2,
+			time.Now(),
+		},
+	}
+}
+
+// Convenience function to create testdata to insert into the database
+func makeIGCTestData(serverURL string) []TrackMeta {
 	return []TrackMeta{
 		{
 			NewTrackID([]byte("asd")),
@@ -205,7 +223,7 @@ func TestIgcServerGetTrack(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
 	server := NewServer(nil, &trackMetasMap, nil, nil)
 
-	testTrackMetas := makeTestData("localhost")
+	testTrackMetas := makeIGCTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
 	for _, trackMeta := range testTrackMetas {
 		err := server.tracks.Append(trackMeta)
@@ -243,7 +261,7 @@ func TestIgcServerGetTrackByIdValid(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
 	server := NewServer(nil, &trackMetasMap, nil, nil)
 
-	testTrackMetas := makeTestData("localhost")
+	testTrackMetas := makeIGCTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
 	for _, trackMeta := range testTrackMetas {
 		err := server.tracks.Append(trackMeta)
@@ -310,7 +328,7 @@ func TestIgcServerGetTrackFieldValid(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
 	server := NewServer(nil, &trackMetasMap, nil, nil)
 
-	testTrackMetas := makeTestData("localhost")
+	testTrackMetas := makeIGCTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
 	for _, trackMeta := range testTrackMetas {
 		err := server.tracks.Append(trackMeta)
@@ -377,7 +395,7 @@ func TestIgcServerGetTrackFieldBad(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
 	server := NewServer(nil, &trackMetasMap, nil, nil)
 
-	testTrackMetas := makeTestData("localhost")
+	testTrackMetas := makeIGCTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
 	for _, trackMeta := range testTrackMetas {
 		err := server.tracks.Append(trackMeta)
@@ -441,6 +459,12 @@ func TestIgcServerGetRubbish(t *testing.T) {
 		"/paragliding/api/rubbish",
 		"/paragliding/api/0a90a9ds109123",
 		"/paragliding/api/some-path",
+		"/paragliding/api/webhook/asdf-path",
+		"/paragliding/api/webhook/asdf-paasasdfasdfasdf",
+		"/paragliding/api/webhook/new_track/asdfa/asdfa",
+		"/paragliding/api/ticker/new_track/asdfa/asdfa",
+		"/paragliding/api/ticker/asdfa/asdfa/asdfa",
+		"/paragliding/api/ticker/latest/asdfa/asdfa",
 		"/012312390123123/api/some-path",
 		"/a213asd123/api/some-path",
 	}
@@ -473,5 +497,71 @@ func TestIgcServerPutMethod(t *testing.T) {
 	allowedMethods := res.Result().Header.Get("Allow")
 	if allowedMethods == "" {
 		t.Fatalf("expected `PUT /` to return an `Allow` header containing the allowed methods, no methods returned or missing header")
+	}
+}
+
+// Test bad GET /webhook/new_track/<id>
+func TestGetWebhookByBadID(t *testing.T) {
+	webhooksMap := NewWebhooksMap()
+	server := NewServer(nil, nil, nil, &webhooksMap)
+
+	for _, badID := range []struct {
+		int
+		string
+	}{
+		{400, "aaaabbbb"},
+		{400, "bad"},
+		{400, "aøaskdljflkasdjfløjsdaf"},
+		{400, "12312o3123"},
+		{400, "--asdf--"},
+		{400, "a"},
+		{404, "1232"},
+		{404, "99999"},
+	} {
+		req := httptest.NewRequest("GET", "/webhook/new_track/"+badID.string, nil)
+		res := httptest.NewRecorder()
+
+		server.ServeHTTP(res, req)
+
+		code := res.Result().StatusCode
+		if code != badID.int {
+			t.Errorf("expected `GET /webhook/new_track/%s` to return '%d', got '%d'", badID.string, badID.int, code)
+		}
+	}
+}
+
+// Test valid GET /webhook/new_track/<id>
+func TestGetWebhookByIdValid(t *testing.T) {
+	webhooksMap := NewWebhooksMap()
+	server := NewServer(nil, nil, nil, &webhooksMap)
+
+	testData := makeWebhooksTestData()
+	ids := make([]WebhookID, 0, len(testData))
+	for _, webhook := range testData {
+		err := server.webhooks.Append(webhook)
+		if err != nil {
+			t.Errorf("unable to add metadata: %s", err)
+			continue
+		}
+		ids = append(ids, webhook.ID)
+	}
+
+	for i, id := range ids {
+		uri := fmt.Sprintf("/webhook/new_track/%d", id)
+		req := httptest.NewRequest("GET", uri, nil)
+		res := httptest.NewRecorder()
+
+		server.ServeHTTP(res, req)
+
+		var data WebhookInfo
+		if err := json.Unmarshal(res.Body.Bytes(), &data); err != nil {
+			t.Errorf("received response body: '%s'", res.Body)
+			t.Fatalf("failed when trying to decode body as json")
+		}
+		expt, _ := json.MarshalIndent(testData[i], "", "  ")
+		got, _ := json.MarshalIndent(data, "", "  ")
+		if !cmp.Equal(expt, got) {
+			t.Errorf("returned track was not equal to inserted track:\n\nrequested id: %d\nexpected:\n%s\n\nreturned:\n%s", id, expt, got)
+		}
 	}
 }
