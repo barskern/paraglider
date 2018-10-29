@@ -1,12 +1,20 @@
 package igcserver
 
 import (
+	"errors"
 	"time"
+)
+
+var (
+	// ErrNoTracksFound symbolizes that there are no tracks to report the
+	// timestamp on
+	ErrNoTracksFound = errors.New("no tracks meeting criteria found")
 )
 
 // Ticker is a generic interface for any type which can act as a ticker
 type Ticker interface {
-	Reporter() <-chan time.Time
+	Latest() <-chan *time.Time
+	Reporter() chan<- time.Time
 	GetReport(limit int) (TickerReport, error)
 	GetReportAfter(timestamp time.Time, limit int) (TickerReport, error)
 }
