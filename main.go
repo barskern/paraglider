@@ -55,7 +55,7 @@ func main() {
 
 	// Create a webhooks abstraction which will connect to a mongodb to store
 	// all webhooks
-	webhooks := igcserver.NewWebhooksDB(mongoSession.Copy())
+	webhooks := igcserver.NewWebhooksDB(mongoSession.Copy(), &httpClient)
 
 	// Make simple ticker for database
 	ticker := igcserver.NewTickerDB(mongoSession.Copy(), 10)

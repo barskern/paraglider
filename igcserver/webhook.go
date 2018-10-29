@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 var (
@@ -24,6 +25,7 @@ var (
 
 // Webhooks is a interface for all storages containing WebhookInfo
 type Webhooks interface {
+	Trigger() chan<- bool
 	Get(id WebhookID) (WebhookInfo, error)
 	Append(webhook WebhookInfo) error
 	Delete(id WebhookID) (WebhookInfo, error)
@@ -31,9 +33,10 @@ type Webhooks interface {
 
 // WebhookInfo contains information about a webhook
 type WebhookInfo struct {
-	ID      WebhookID `json:"-" bson:"id"`
-	URLstr  string    `json:"webhookURL" bson:"webhookURL"`
-	Trigger uint      `json:"minTriggerValue" bson:"minTriggerValue"`
+	ID            WebhookID `json:"-" bson:"id"`
+	URLstr        string    `json:"webhookURL" bson:"webhookURL"`
+	TriggerRate   uint      `json:"minTriggerValue" bson:"minTriggerValue"`
+	LastTriggered time.Time `json:"-" bson:"lastTriggered"`
 }
 
 // WebhookID is a unique id for a track
@@ -58,7 +61,7 @@ func (server *Server) webhookRegHandler(w http.ResponseWriter, r *http.Request) 
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 
-	webhook := WebhookInfo{Trigger: 1}
+	webhook := WebhookInfo{TriggerRate: 1}
 	if err := dec.Decode(&webhook); err != nil {
 		logger.WithField("error", err).Info("unable to decode request body")
 		http.Error(w, "invalid json object", http.StatusBadRequest)
@@ -70,7 +73,7 @@ func (server *Server) webhookRegHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "invalid url", http.StatusBadRequest)
 		return
 	}
-	if webhook.Trigger < 1 {
+	if webhook.TriggerRate < 1 {
 		logger.WithField("error", err).Info("invalid trigger value")
 		http.Error(w, "invalid trigger value", http.StatusBadRequest)
 		return
