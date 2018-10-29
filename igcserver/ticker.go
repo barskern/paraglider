@@ -1,7 +1,10 @@
 package igcserver
 
 import (
+	"encoding/json"
 	"errors"
+	"github.com/gorilla/mux"
+	"net/http"
 	"time"
 )
 
@@ -34,4 +37,70 @@ type TickerReport struct {
 	End        time.Time     `json:"t_stop"`
 	Tracks     []TrackID     `json:"tracks"`
 	Processing time.Duration `json:"processing"`
+}
+
+// ---------- //
+// TICKER API //
+// ---------- //
+
+func (server *Server) tickerHandler(w http.ResponseWriter, r *http.Request) {
+	logger := newReqLogger(r)
+
+	logger.Info("processing request to get ticker report")
+
+	report, err := server.ticker.GetReport(5)
+	if err == ErrNoTracksFound {
+		logger.WithField("error", err).Info("no tracks registered")
+		http.Error(w, "content not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		logger.WithField("error", err).Info("unable to build ticker report")
+		http.Error(w, "internal server error occurred", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(report)
+}
+
+func (server *Server) tickerAfterHandler(w http.ResponseWriter, r *http.Request) {
+	logger := newReqLogger(r)
+
+	logger.Info("processing request to get ticker report after timestamp")
+
+	vars := mux.Vars(r)
+	timestampStr, _ := vars["timestamp"]
+	timestamp, err := time.Parse(time.RFC3339, timestampStr)
+	if err != nil {
+		logger.WithField("error", err).Info("unable to parse as timestamp")
+		http.Error(w, "invalid timestamp", http.StatusBadRequest)
+		return
+	}
+
+	report, err := server.ticker.GetReportAfter(timestamp, 5)
+	if err == ErrNoTracksFound {
+		logger.WithField("error", err).Info("no tracks registered")
+		http.Error(w, "content not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		logger.WithField("error", err).Info("unable to build ticker report")
+		http.Error(w, "internal server error occurred", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(report)
+}
+
+func (server *Server) tickerLatestHandler(w http.ResponseWriter, r *http.Request) {
+	logger := newReqLogger(r)
+
+	logger.Info("processing request to get latest ticker timestamp")
+
+	latest := <-server.ticker.Latest()
+	if latest == nil {
+		logger.Info("latest timestamp of request not set")
+		http.Error(w, "content not found", http.StatusNotFound)
+		return
+	}
+	logger.WithField("latest", latest).Info("responding with latest timestamp")
+	w.Write([]byte(latest.Format(time.RFC3339)))
 }
