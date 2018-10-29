@@ -25,7 +25,7 @@ var (
 
 // Webhooks is a interface for all storages containing WebhookInfo
 type Webhooks interface {
-	Trigger() chan<- bool
+	Trigger()
 	Get(id WebhookID) (WebhookInfo, error)
 	Append(webhook WebhookInfo) error
 	Delete(id WebhookID) (WebhookInfo, error)

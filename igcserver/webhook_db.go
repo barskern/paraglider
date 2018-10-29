@@ -102,8 +102,8 @@ func updateWebhook(conn *mgo.Session, httpClient *http.Client, webhook WebhookIn
 }
 
 // Trigger returns a channel to trigger webhooks based on the number of tracks
-func (db *WebhooksDB) Trigger() chan<- bool {
-	return db.trigger
+func (db *WebhooksDB) Trigger() {
+	db.trigger <- true
 }
 
 // Get fetches the track webhook of a specific id if it exists

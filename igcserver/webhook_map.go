@@ -14,12 +14,16 @@ type WebhooksMap struct {
 
 // NewWebhooksMap creates a new mutex and mapping from ID to WebhookInfo
 func NewWebhooksMap() WebhooksMap {
-	return WebhooksMap{sync.RWMutex{}, make(map[WebhookID]WebhookInfo), make(chan bool)}
+	trigger := make(chan bool, 3)
+	go func() {
+		<-trigger
+	}()
+	return WebhooksMap{sync.RWMutex{}, make(map[WebhookID]WebhookInfo), trigger}
 }
 
 // Trigger returns a channel to trigger webhooks based on the number of tracks
-func (db *WebhooksMap) Trigger() chan<- bool {
-	return db.trigger
+func (db *WebhooksMap) Trigger() {
+	db.trigger <- true
 }
 
 // Get fetches the webhook of a specific id if it exists

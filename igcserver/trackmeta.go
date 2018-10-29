@@ -164,6 +164,8 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Send the ticker information that we just added a track
 	server.ticker.Reporter() <- trackMeta.Timestamp
+	// Trigger webhooks
+	server.webhooks.Trigger()
 
 	result := map[string]interface{}{
 		"id": trackMeta.ID,
