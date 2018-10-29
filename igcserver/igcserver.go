@@ -164,12 +164,17 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 	// Create and add new trackmeta object
 	trackMeta := TrackMetaFrom(*reqURL, track)
 	err = server.data.Append(trackMeta)
-	if err != nil {
+	if err == ErrTrackAlreadyExists {
+		logger.WithFields(log.Fields{
+			"trackmeta": trackMeta,
+		}).Info("request attempted to add duplicate track metadata")
+		http.Error(w, "track with same url already exists", http.StatusForbidden)
+	} else if err != nil {
 		logger.WithFields(log.Fields{
 			"trackmeta": trackMeta,
 			"error":     err,
-		}).Info("unable to add track meta")
-		http.Error(w, "track with same url already exists", http.StatusForbidden)
+		}).Info("unable to add track metadata")
+		http.Error(w, "internal server error occured", http.StatusInternalServerError)
 		return
 	}
 
@@ -232,15 +237,14 @@ func (server *Server) trackGetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	idlog := logger.WithField("id", id)
-	meta, ok, err := server.data.Get(TrackID(id))
-	if err != nil {
-		idlog.WithField("error", err).Info("error when getting metadata of id")
-		http.Error(w, "internal server error occured", http.StatusInternalServerError)
-		return
-	}
-	if !ok {
+	meta, err := server.data.Get(TrackID(id))
+	if err == ErrTrackNotFound {
 		idlog.Info("unable to find metadata of id")
 		http.Error(w, "content not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		idlog.WithField("error", err).Info("error when getting metadata of id")
+		http.Error(w, "internal server error occured", http.StatusInternalServerError)
 		return
 	}
 	logger.WithFields(log.Fields{
@@ -266,15 +270,14 @@ func (server *Server) trackGetFieldHandler(w http.ResponseWriter, r *http.Reques
 	field, _ := vars["field"]
 	idlog := logger.WithField("id", id)
 
-	meta, ok, err := server.data.Get(TrackID(id))
-	if err != nil {
-		idlog.WithField("error", err).Info("error when getting metadata of id")
-		http.Error(w, "internal server error occured", http.StatusInternalServerError)
-		return
-	}
-	if !ok {
+	meta, err := server.data.Get(TrackID(id))
+	if err == ErrTrackNotFound {
 		idlog.Info("unable to find metadata of id")
 		http.Error(w, "content not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		idlog.WithField("error", err).Info("error when getting metadata of id")
+		http.Error(w, "internal server error occured", http.StatusInternalServerError)
 		return
 	}
 

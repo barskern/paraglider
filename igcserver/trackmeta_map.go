@@ -1,7 +1,6 @@
 package igcserver
 
 import (
-	"errors"
 	"sync"
 )
 
@@ -18,31 +17,35 @@ func NewTrackMetasMap() TrackMetasMap {
 }
 
 // Get fetches the track meta of a specific id if it exists
-func (metas *TrackMetasMap) Get(id TrackID) (TrackMeta, bool, error) {
+func (metas *TrackMetasMap) Get(id TrackID) (meta TrackMeta, err error) {
 	metas.RLock()
 	defer metas.RUnlock()
-	v, ok := metas.data[id]
-	return v, ok, nil
+	meta, ok := metas.data[id]
+	if !ok {
+		err = ErrTrackNotFound
+	}
+	return
 }
 
 // Append appends a track meta and returns the given id
-func (metas *TrackMetasMap) Append(meta TrackMeta) error {
+func (metas *TrackMetasMap) Append(meta TrackMeta) (err error) {
 	metas.Lock()
 	defer metas.Unlock()
 	if _, exists := metas.data[meta.ID]; exists {
-		return errors.New("trackmeta with same url already exists")
+		err = ErrTrackAlreadyExists
+	} else {
+		metas.data[meta.ID] = meta
 	}
-	metas.data[meta.ID] = meta
-	return nil
+	return
 }
 
 // GetAllIDs fetches all the stored ids
-func (metas *TrackMetasMap) GetAllIDs() ([]TrackID, error) {
+func (metas *TrackMetasMap) GetAllIDs() (ids []TrackID, err error) {
 	metas.RLock()
 	defer metas.RUnlock()
-	keys := make([]TrackID, 0, len(metas.data))
-	for k := range metas.data {
-		keys = append(keys, k)
+	ids = make([]TrackID, 0, len(metas.data))
+	for id := range metas.data {
+		ids = append(ids, id)
 	}
-	return keys, nil
+	return
 }

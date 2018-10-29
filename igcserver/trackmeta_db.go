@@ -1,7 +1,6 @@
 package igcserver
 
 import (
-	"errors"
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 )
@@ -20,40 +19,34 @@ func NewTrackMetasDB(collection *mgo.Collection) TrackMetasDB {
 }
 
 // Get fetches the track meta of a specific id if it exists
-func (metas *TrackMetasDB) Get(id TrackID) (TrackMeta, bool, error) {
-	var meta TrackMeta
-	err := metas.Find(bson.M{"id": id}).One(&meta)
+func (metas *TrackMetasDB) Get(id TrackID) (meta TrackMeta, err error) {
+	err = metas.Find(bson.M{"id": id}).One(&meta)
 	if err == mgo.ErrNotFound {
-		return TrackMeta{}, false, nil
+		err = ErrTrackNotFound
 	}
-	if err != nil {
-		return TrackMeta{}, false, err
-	}
-	return meta, true, nil
+	return
 }
 
 // Append appends a track meta and returns the given id
-func (metas *TrackMetasDB) Append(meta TrackMeta) error {
-	_, exists, err := metas.Get(meta.ID)
-	if err != nil {
-		return err
+func (metas *TrackMetasDB) Append(meta TrackMeta) (err error) {
+	_, err = metas.Get(meta.ID)
+	if err == ErrTrackNotFound {
+		err = metas.Insert(meta)
+	} else if err == nil {
+		err = ErrTrackAlreadyExists
 	}
-	if exists {
-		return errors.New("track already exists")
-	}
-	return metas.Insert(meta)
+	return
 }
 
 // GetAllIDs fetches all the stored ids
-func (metas *TrackMetasDB) GetAllIDs() ([]TrackID, error) {
+func (metas *TrackMetasDB) GetAllIDs() (ids []TrackID, err error) {
 	var trackMetas []TrackMeta
-	err := metas.Find(nil).All(&trackMetas)
-	if err != nil {
-		return []TrackID{}, err
+	err = metas.Find(nil).All(&trackMetas)
+	if err == nil {
+		ids = make([]TrackID, len(trackMetas))
+		for i, v := range trackMetas {
+			ids[i] = v.ID
+		}
 	}
-	ids := make([]TrackID, len(trackMetas))
-	for i, v := range trackMetas {
-		ids[i] = v.ID
-	}
-	return ids, nil
+	return
 }
