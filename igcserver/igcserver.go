@@ -18,8 +18,7 @@ type Server struct {
 	startupTime time.Time
 	data        TrackMetas
 	httpClient  *http.Client
-	// TODO change from mux to pure regexes because of the simple routing
-	router *mux.Router
+	router      *mux.Router
 }
 
 // NewServer creates a new server which handles requests to the igc api
@@ -139,6 +138,15 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid url", http.StatusBadRequest)
 		return
 	}
+	// Check if track already exists before requesting an external service to
+	// prevent unnecessary external calls
+	id := NewTrackID([]byte(reqURL.String()))
+	_, err = server.data.Get(id)
+	if err == nil {
+		logger.Info("request attempted to add duplicate track metadata")
+		http.Error(w, "track with same url already exists", http.StatusForbidden)
+		return
+	}
 	resp, err := server.httpClient.Get(reqURL.String())
 	if err != nil {
 		logger.WithField("error", err).Info("unable to fetch data from provided url")
@@ -169,6 +177,7 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 			"trackmeta": trackMeta,
 		}).Info("request attempted to add duplicate track metadata")
 		http.Error(w, "track with same url already exists", http.StatusForbidden)
+		return
 	} else if err != nil {
 		logger.WithFields(log.Fields{
 			"trackmeta": trackMeta,
