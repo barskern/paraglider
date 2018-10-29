@@ -25,7 +25,7 @@ Register a track. A single track can only be registered **once**.
 
 ### Request
 
-```json
+```
 {
   "url": "<url>"
 }
@@ -35,7 +35,7 @@ Register a track. A single track can only be registered **once**.
 
 ### Response
 
-```json
+```
 {
   "id": "<id>"
 }
@@ -48,7 +48,7 @@ The returned `<id>` will be a unique identifier for the posted track.
 
 Returns all the ids of all registered tracks.
 
-```json
+```
 [<id1>, <id2>, ...]
 ```
 
@@ -56,7 +56,7 @@ Returns all the ids of all registered tracks.
 
 Returns metadata about a specific track. `<id>` is a valid track id which was returned on insertion using `POST`.
 
-```json
+```
 {
 "H_date": <date from File Header, H-record>,
 "pilot": <pilot>,
@@ -88,7 +88,7 @@ Returns the `timestamp` (formatted as specified in RFC3339) of the last added tr
 
 Returns a report of the oldest tracks added.
 
-```json
+```
 {
 "t_latest": <latest added timestamp>,
 "t_start": <the first timestamp of the added track>, this will be the oldest track recorded
@@ -102,7 +102,7 @@ Returns a report of the oldest tracks added.
 
 Returns a report of the added tracks after a certain timestamp (formatted as specified in RFC3339).
 
-```json
+```
 {
 "t_latest": <latest added timestamp of the entire collection>,
 "t_start": <the first timestamp of the added track>, this will be higher than the parameter provided in the query
