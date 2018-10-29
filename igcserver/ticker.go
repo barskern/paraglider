@@ -6,9 +6,9 @@ import (
 
 // Ticker is a generic interface for any type which can act as a ticker
 type Ticker interface {
-	ReportLatest() <-chan time.Time
-	GetReport() (TickerReport, error)
-	GetReportAfter(time.Time) (TickerReport, error)
+	Reporter() <-chan time.Time
+	GetReport(limit int) (TickerReport, error)
+	GetReportAfter(timestamp time.Time, limit int) (TickerReport, error)
 }
 
 // TickerReport encompasses the report the ticker provides to the user
