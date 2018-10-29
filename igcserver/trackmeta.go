@@ -1,13 +1,18 @@
 package igcserver
 
 import (
-	"errors"
 	"github.com/marni/goigc"
 	"hash/fnv"
 	"net/url"
-	"sync"
 	"time"
 )
+
+// TrackMetas is a interface for all storages containing TrackMeta
+type TrackMetas interface {
+	Get(id TrackID) (TrackMeta, bool)
+	Append(id TrackID, meta TrackMeta) error
+	GetAllIDs() []TrackID
+}
 
 // TrackID is a unique id for a track
 type TrackID uint32
@@ -64,53 +69,4 @@ func TrackMetaFrom(url url.URL, track igc.Track) TrackMeta {
 // MakeTrackMetaEntry makes a TrackMeta object and an id for a given track/url
 func MakeTrackMetaEntry(url url.URL, track igc.Track) (id TrackID, meta TrackMeta) {
 	return NewTrackID([]byte(url.String())), TrackMetaFrom(url, track)
-}
-
-// TrackMetas is a interface for all storages containing TrackMeta
-type TrackMetas interface {
-	Get(id TrackID) (TrackMeta, bool)
-	Append(id TrackID, meta TrackMeta) error
-	GetAllIDs() []TrackID
-}
-
-// TrackMetasMap contains a map to many TrackMeta objects which are protected
-// by a RWMutex and indexed by a unique id
-type TrackMetasMap struct {
-	sync.RWMutex
-	data map[TrackID]TrackMeta
-}
-
-// NewTrackMetasMap creates a new mutex and mapping from ID to TrackMeta
-func NewTrackMetasMap() TrackMetasMap {
-	return TrackMetasMap{sync.RWMutex{}, make(map[TrackID]TrackMeta)}
-}
-
-// Get fetches the track meta of a specific id if it exists
-func (metas *TrackMetasMap) Get(id TrackID) (TrackMeta, bool) {
-	metas.RLock()
-	defer metas.RUnlock()
-	v, ok := metas.data[id]
-	return v, ok
-}
-
-// Append appends a track meta and returns the given id
-func (metas *TrackMetasMap) Append(id TrackID, meta TrackMeta) error {
-	metas.Lock()
-	defer metas.Unlock()
-	if _, exists := metas.data[id]; exists {
-		return errors.New("trackmeta with same url already exists")
-	}
-	metas.data[id] = meta
-	return nil
-}
-
-// GetAllIDs fetches all the stored ids
-func (metas *TrackMetasMap) GetAllIDs() []TrackID {
-	metas.RLock()
-	defer metas.RUnlock()
-	keys := make([]TrackID, 0, len(metas.data))
-	for k := range metas.data {
-		keys = append(keys, k)
-	}
-	return keys
 }
