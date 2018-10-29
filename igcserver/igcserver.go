@@ -16,22 +16,29 @@ import (
 // Server distributes request to a pool of worker gorutines
 type Server struct {
 	startupTime time.Time
-	data        TrackMetas
 	httpClient  *http.Client
 	router      *mux.Router
 	ticker      Ticker
+	tracks      TrackMetas
+	webhooks    Webhooks
 }
 
 // NewServer creates a new server which handles requests to the igc api
-func NewServer(httpClient *http.Client, trackMetas TrackMetas, ticker Ticker) (srv Server) {
+func NewServer(httpClient *http.Client, trackMetas TrackMetas, ticker Ticker, webhooks Webhooks) (srv Server) {
 	srv = Server{
 		time.Now(),
-		trackMetas,
 		httpClient,
 		mux.NewRouter(),
 		ticker,
+		trackMetas,
+		webhooks,
 	}
 	srv.router.Use(loggingMiddleware)
+
+	// Webhook API
+	srv.router.HandleFunc("/webhook/new_track", srv.webhookRegHandler).Methods(http.MethodPost)
+	srv.router.HandleFunc("/webhook/new_track/{webhookID}", srv.webhookGetHandler).Methods(http.MethodGet)
+	srv.router.HandleFunc("/webhook/new_track/{webhookID}", srv.webhookDeleteHandler).Methods(http.MethodDelete)
 
 	// Ticker API
 	srv.router.HandleFunc("/ticker", srv.tickerHandler).Methods(http.MethodGet)
@@ -92,8 +99,14 @@ func newReqLogger(r *http.Request) *log.Entry {
 	})
 }
 
+// ---------- //
+// TICKER API //
+// ---------- //
+
 func (server *Server) tickerHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
+
+	logger.Info("processing request to get ticker report")
 
 	report, err := server.ticker.GetReport(5)
 	if err == ErrNoTracksFound {
@@ -111,6 +124,8 @@ func (server *Server) tickerHandler(w http.ResponseWriter, r *http.Request) {
 
 func (server *Server) tickerAfterHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
+
+	logger.Info("processing request to get ticker report after timestamp")
 
 	vars := mux.Vars(r)
 	timestampStr, _ := vars["timestamp"]
@@ -138,6 +153,8 @@ func (server *Server) tickerAfterHandler(w http.ResponseWriter, r *http.Request)
 func (server *Server) tickerLatestHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
 
+	logger.Info("processing request to get latest ticker timestamp")
+
 	latest := <-server.ticker.Latest()
 	if latest == nil {
 		logger.Info("latest timestamp of request not set")
@@ -147,6 +164,10 @@ func (server *Server) tickerLatestHandler(w http.ResponseWriter, r *http.Request
 	logger.WithField("latest", latest).Info("responding with latest timestamp")
 	w.Write([]byte(latest.Format(time.RFC3339)))
 }
+
+// --------- //
+// TRACK API //
+// --------- //
 
 // metaHandler returns the metadata about the api endpoint
 func (server *Server) metaHandler(w http.ResponseWriter, r *http.Request) {
@@ -203,7 +224,7 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if track already exists before requesting an external service to
 	// prevent unnecessary external calls
 	id := NewTrackID([]byte(reqURL.String()))
-	_, err = server.data.Get(id)
+	_, err = server.tracks.Get(id)
 	if err == nil {
 		logger.Info("request attempted to add duplicate track metadata")
 		http.Error(w, "track with same url already exists", http.StatusForbidden)
@@ -233,7 +254,7 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create and add new trackmeta object
 	trackMeta := TrackMetaFrom(*reqURL, track)
-	err = server.data.Append(trackMeta)
+	err = server.tracks.Append(trackMeta)
 	if err == ErrTrackAlreadyExists {
 		logger.WithFields(log.Fields{
 			"trackmeta": trackMeta,
@@ -276,7 +297,7 @@ type TrackRegRequest struct {
 func (server *Server) trackGetAllHandler(w http.ResponseWriter, r *http.Request) {
 	logger := newReqLogger(r)
 
-	ids, err := server.data.GetAllIDs()
+	ids, err := server.tracks.GetAllIDs()
 	if err != nil {
 		logger.WithField("error", err).Error("unable to respond to request of all IDs")
 		http.Error(w, "internal server error occurred", http.StatusInternalServerError)
@@ -311,7 +332,7 @@ func (server *Server) trackGetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	idlog := logger.WithField("id", id)
-	meta, err := server.data.Get(TrackID(id))
+	meta, err := server.tracks.Get(TrackID(id))
 	if err == ErrTrackNotFound {
 		idlog.Info("unable to find metadata of id")
 		http.Error(w, "content not found", http.StatusNotFound)
@@ -344,7 +365,7 @@ func (server *Server) trackGetFieldHandler(w http.ResponseWriter, r *http.Reques
 	field, _ := vars["field"]
 	idlog := logger.WithField("id", id)
 
-	meta, err := server.data.Get(TrackID(id))
+	meta, err := server.tracks.Get(TrackID(id))
 	if err == ErrTrackNotFound {
 		idlog.Info("unable to find metadata of id")
 		http.Error(w, "content not found", http.StatusNotFound)

@@ -79,15 +79,18 @@ func makeTestServers() (server Server, igcFileServer *httptest.Server) {
 	// Setup a dummy ticker
 	ticker := NewTickerDummy(2)
 
+	// Setup a in-memory webhooks
+	webhooks := NewWebhooksMap()
+
 	// Initialize main API server
-	server = NewServer(igcFileServer.Client(), &trackMetasMap, &ticker)
+	server = NewServer(igcFileServer.Client(), &trackMetasMap, &ticker, &webhooks)
 	return
 }
 
 // Test GET /
 func TestIgcServerGetMetaValid(t *testing.T) {
 	// We don't need any extra deps to test metadata
-	server := NewServer(nil, nil, nil)
+	server := NewServer(nil, nil, nil, nil)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	res := httptest.NewRecorder()
@@ -200,12 +203,12 @@ func TestIgcServerPostTrackValidDuplicate(t *testing.T) {
 // Test GET /track
 func TestIgcServerGetTrack(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap, nil)
+	server := NewServer(nil, &trackMetasMap, nil, nil)
 
 	testTrackMetas := makeTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
 	for _, trackMeta := range testTrackMetas {
-		err := server.data.Append(trackMeta)
+		err := server.tracks.Append(trackMeta)
 		if err != nil {
 			t.Errorf("unable to add metadata: %s", err)
 			continue
@@ -238,12 +241,12 @@ outer:
 // Test valid GET /track/<id>
 func TestIgcServerGetTrackByIdValid(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap, nil)
+	server := NewServer(nil, &trackMetasMap, nil, nil)
 
 	testTrackMetas := makeTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
 	for _, trackMeta := range testTrackMetas {
-		err := server.data.Append(trackMeta)
+		err := server.tracks.Append(trackMeta)
 		if err != nil {
 			t.Errorf("unable to add metadata: %s", err)
 			continue
@@ -274,7 +277,7 @@ func TestIgcServerGetTrackByIdValid(t *testing.T) {
 // Test bad GET /track/<id>
 func TestIgcServerGetTrackByIdBad(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap, nil)
+	server := NewServer(nil, &trackMetasMap, nil, nil)
 
 	for _, badID := range []struct {
 		int
@@ -305,12 +308,12 @@ func TestIgcServerGetTrackByIdBad(t *testing.T) {
 // Test valid GET /track/<id>/<field>
 func TestIgcServerGetTrackFieldValid(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap, nil)
+	server := NewServer(nil, &trackMetasMap, nil, nil)
 
 	testTrackMetas := makeTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
 	for _, trackMeta := range testTrackMetas {
-		err := server.data.Append(trackMeta)
+		err := server.tracks.Append(trackMeta)
 		if err != nil {
 			t.Errorf("unable to add metadata: %s", err)
 			continue
@@ -372,12 +375,12 @@ func TestIgcServerGetTrackFieldValid(t *testing.T) {
 // Test bad GET /track/<id>/<field>
 func TestIgcServerGetTrackFieldBad(t *testing.T) {
 	trackMetasMap := NewTrackMetasMap()
-	server := NewServer(nil, &trackMetasMap, nil)
+	server := NewServer(nil, &trackMetasMap, nil, nil)
 
 	testTrackMetas := makeTestData("localhost")
 	ids := make([]TrackID, 0, len(testTrackMetas))
 	for _, trackMeta := range testTrackMetas {
-		err := server.data.Append(trackMeta)
+		err := server.tracks.Append(trackMeta)
 		if err != nil {
 			t.Errorf("unable to add metadata: %s", err)
 			continue
@@ -426,7 +429,7 @@ outer:
 
 // Test different rubbish urls -> 404
 func TestIgcServerGetRubbish(t *testing.T) {
-	server := NewServer(nil, nil, nil)
+	server := NewServer(nil, nil, nil, nil)
 
 	rubbishURLs := []string{
 		"/rubbish",
@@ -456,7 +459,7 @@ func TestIgcServerGetRubbish(t *testing.T) {
 
 // Test PUT -> 405 response
 func TestIgcServerPutMethod(t *testing.T) {
-	server := NewServer(nil, nil, nil)
+	server := NewServer(nil, nil, nil, nil)
 
 	req := httptest.NewRequest("PUT", "/", nil)
 	res := httptest.NewRecorder()
