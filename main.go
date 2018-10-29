@@ -58,6 +58,7 @@ func main() {
 
 	// Route all requests to `paragliding/api/` to the server and remove prefix
 	http.Handle("/paragliding/api/", http.StripPrefix("/paragliding/api", &server))
+	http.Handle("/paragliding/", http.RedirectHandler("/paragliding/api/", http.StatusMovedPermanently))
 
 	// This function will block the current thread
 	err = http.ListenAndServe(":"+port, nil)
