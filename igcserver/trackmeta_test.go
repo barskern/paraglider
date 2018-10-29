@@ -9,18 +9,17 @@ import (
 // Test that all returned ids from 'Append' are found when using 'Get'
 func TestTrackMetaDuplicate(t *testing.T) {
 	meta := TrackMeta{
-		TrackSrcURL: "not-unique",
+		ID: NewTrackID([]byte("not-unique")),
 	}
 
 	metas := NewTrackMetasMap()
 
 	var err error
-	id := NewTrackID([]byte(meta.TrackSrcURL))
-	err = metas.Append(id, meta)
+	err = metas.Append(meta)
 	if err != nil {
 		t.Fatalf("unable to add metadata: %s", err)
 	}
-	err = metas.Append(id, meta)
+	err = metas.Append(meta)
 	if err == nil {
 		t.Fatalf("same track meta duplicate track ids should be rejected")
 	}
@@ -34,7 +33,7 @@ func TestTrackMetasGet(t *testing.T) {
 	for i := 0; i < metaCount; i++ {
 		rand.Read(buf)
 		pureMetas[i] = TrackMeta{
-			TrackSrcURL: string(buf),
+			ID: NewTrackID(buf),
 		}
 	}
 
@@ -43,8 +42,8 @@ func TestTrackMetasGet(t *testing.T) {
 	var ids [metaCount]TrackID
 	var err error
 	for i, v := range pureMetas {
-		ids[i] = NewTrackID([]byte(v.TrackSrcURL))
-		err = metas.Append(ids[i], v)
+		ids[i] = v.ID
+		err = metas.Append(v)
 		if err != nil {
 			t.Fatalf("unable to add metadata: %s", err)
 			continue
@@ -67,7 +66,7 @@ func TestTrackMetasGetConcurr(t *testing.T) {
 	for i := 0; i < metaCount; i++ {
 		rand.Read(buf)
 		pureMetas[i] = TrackMeta{
-			TrackSrcURL: string(buf),
+			ID: NewTrackID(buf),
 		}
 	}
 
@@ -75,8 +74,8 @@ func TestTrackMetasGetConcurr(t *testing.T) {
 	var ids [metaCount]TrackID
 	var err error
 	for i, v := range pureMetas {
-		ids[i] = NewTrackID([]byte(v.TrackSrcURL))
-		err = metas.Append(ids[i], v)
+		ids[i] = v.ID
+		err = metas.Append(v)
 		if err != nil {
 			t.Fatalf("unable to add metadata: %s", err)
 		}
@@ -103,7 +102,7 @@ func TestTrackMetasGetAllIDs(t *testing.T) {
 	for i := 0; i < metaCount; i++ {
 		rand.Read(buf)
 		pureMetas[i] = TrackMeta{
-			TrackSrcURL: string(buf),
+			ID: NewTrackID(buf),
 		}
 	}
 
@@ -111,8 +110,8 @@ func TestTrackMetasGetAllIDs(t *testing.T) {
 	var ids [metaCount]TrackID
 	var err error
 	for i, v := range pureMetas {
-		ids[i] = NewTrackID([]byte(v.TrackSrcURL))
-		err = metas.Append(ids[i], v)
+		ids[i] = v.ID
+		err = metas.Append(v)
 		if err != nil {
 			t.Fatalf("unable to add metadata: %s", err)
 		}

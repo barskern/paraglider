@@ -163,8 +163,8 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create and add new trackmeta object
-	id, trackMeta := MakeTrackMetaEntry(*reqURL, track)
-	err = server.data.Append(id, trackMeta)
+	trackMeta := TrackMetaFrom(*reqURL, track)
+	err = server.data.Append(trackMeta)
 
 	if err != nil {
 		logger.WithFields(log.Fields{
@@ -176,12 +176,11 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := map[string]interface{}{
-		"id": id,
+		"id": trackMeta.ID,
 	}
 
 	logger.WithFields(log.Fields{
 		"trackmeta": trackMeta,
-		"id":        id,
 	}).Info("responding with id of inserted track metadata")
 
 	json.NewEncoder(w).Encode(result)

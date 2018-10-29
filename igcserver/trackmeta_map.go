@@ -26,13 +26,13 @@ func (metas *TrackMetasMap) Get(id TrackID) (TrackMeta, bool) {
 }
 
 // Append appends a track meta and returns the given id
-func (metas *TrackMetasMap) Append(id TrackID, meta TrackMeta) error {
+func (metas *TrackMetasMap) Append(meta TrackMeta) error {
 	metas.Lock()
 	defer metas.Unlock()
-	if _, exists := metas.data[id]; exists {
+	if _, exists := metas.data[meta.ID]; exists {
 		return errors.New("trackmeta with same url already exists")
 	}
-	metas.data[id] = meta
+	metas.data[meta.ID] = meta
 	return nil
 }
 

@@ -10,12 +10,12 @@ import (
 // TrackMetas is a interface for all storages containing TrackMeta
 type TrackMetas interface {
 	Get(id TrackID) (TrackMeta, bool)
-	Append(id TrackID, meta TrackMeta) error
+	Append(meta TrackMeta) error
 	GetAllIDs() []TrackID
 }
 
 // TrackID is a unique id for a track
-type TrackID interface{}
+type TrackID uint32
 
 // NewTrackID creates a new unique track ID
 func NewTrackID(v []byte) TrackID {
@@ -38,12 +38,13 @@ func NewTrackID(v []byte) TrackID {
 // }
 // ```
 type TrackMeta struct {
-	Date        time.Time `json:"H_date"`
-	Pilot       string    `json:"pilot"`
-	Glider      string    `json:"glider"`
-	GliderID    string    `json:"glider_id"`
-	TrackLength float64   `json:"track_length"`
-	TrackSrcURL string    `json:"track_src_url"`
+	ID          TrackID   `json:"-" bson:"id"`
+	Date        time.Time `json:"H_date" bson:"H_date"`
+	Pilot       string    `json:"pilot" bson:"pilot"`
+	Glider      string    `json:"glider" bson:"glider"`
+	GliderID    string    `json:"glider_id" bson:"glider_id"`
+	TrackLength float64   `json:"track_length" bson:"track_length"`
+	TrackSrcURL string    `json:"track_src_url" bson:"track_src_url"`
 }
 
 // calcTotalDistance returns the total distance between the points in order
@@ -57,6 +58,7 @@ func calcTotalDistance(points []igc.Point) (trackLength float64) {
 // TrackMetaFrom converts a igc.Track into a TrackMeta struct
 func TrackMetaFrom(url url.URL, track igc.Track) TrackMeta {
 	return TrackMeta{
+		NewTrackID([]byte(url.String())),
 		track.Date,
 		track.Pilot,
 		track.GliderType,
@@ -64,9 +66,4 @@ func TrackMetaFrom(url url.URL, track igc.Track) TrackMeta {
 		calcTotalDistance(track.Points),
 		url.String(),
 	}
-}
-
-// MakeTrackMetaEntry makes a TrackMeta object and an id for a given track/url
-func MakeTrackMetaEntry(url url.URL, track igc.Track) (id TrackID, meta TrackMeta) {
-	return NewTrackID([]byte(url.String())), TrackMetaFrom(url, track)
 }
