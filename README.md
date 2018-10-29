@@ -6,6 +6,12 @@
 [![Release](https://img.shields.io/github/release/barskern/paragliding.svg)](https://github.com/barskern/paragliding/releases/latest)
 [![Coverage Status](https://coveralls.io/repos/github/barskern/paragliding/badge.svg?branch=master)](https://coveralls.io/github/barskern/paragliding?branch=master)
 
+# Reasoning
+
+I chose to use [globalsign/mgo](https://github.com/globalsign/mgo) because it had solid documentation and was not as rough around the edges as the official API for MongoDB.
+
+I tried to have conncurrency in mind while designing this system, hence I tried to use channels and non-blocking actions were I could.
+
 
 # About
 
