@@ -174,7 +174,7 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 			"trackmeta": trackMeta,
 			"error":     err,
 		}).Info("unable to add track metadata")
-		http.Error(w, "internal server error occured", http.StatusInternalServerError)
+		http.Error(w, "internal server error occurred", http.StatusInternalServerError)
 		return
 	}
 
@@ -205,7 +205,7 @@ func (server *Server) trackGetAllHandler(w http.ResponseWriter, r *http.Request)
 	ids, err := server.data.GetAllIDs()
 	if err != nil {
 		logger.WithField("error", err).Error("unable to respond to request of all IDs")
-		http.Error(w, "internal server error occured", http.StatusInternalServerError)
+		http.Error(w, "internal server error occurred", http.StatusInternalServerError)
 		return
 	}
 	logger.WithField("ids", ids).Info("responding to request with all ids")
@@ -221,7 +221,7 @@ func (server *Server) trackGetAllHandler(w http.ResponseWriter, r *http.Request)
 //   "glider": <glider>,
 //   "glider_id": <glider_id>,
 //   "track_length": <calculated total track length>,
-//   "track_src_url": <the original URL used to upload the track, ie. the URL used with POST>
+//   "track_src_url": <the original URL used to upload the track, i.e. the URL used with POST>
 // }
 //```
 func (server *Server) trackGetHandler(w http.ResponseWriter, r *http.Request) {
@@ -244,7 +244,7 @@ func (server *Server) trackGetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		idlog.WithField("error", err).Info("error when getting metadata of id")
-		http.Error(w, "internal server error occured", http.StatusInternalServerError)
+		http.Error(w, "internal server error occurred", http.StatusInternalServerError)
 		return
 	}
 	logger.WithFields(log.Fields{
@@ -277,7 +277,7 @@ func (server *Server) trackGetFieldHandler(w http.ResponseWriter, r *http.Reques
 		return
 	} else if err != nil {
 		idlog.WithField("error", err).Info("error when getting metadata of id")
-		http.Error(w, "internal server error occured", http.StatusInternalServerError)
+		http.Error(w, "internal server error occurred", http.StatusInternalServerError)
 		return
 	}
 
