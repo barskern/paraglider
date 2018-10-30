@@ -19,6 +19,10 @@ An online service that will allow users to browse information about IGC files. I
 
 The service will store IGC files metadata in a NoSQL Database (persistent storage). The system will generate events, which can be subscribed to using webhooks, and it will monitor for new events happening from the outside services.
 
+# Clocktrigger
+
+Link to the [paragliding-clocktrigger](https://github.com/barskern/paragliding-clocktrigger) which is deployed on open-stack.
+
 # IGC-Tracks API
 
 ## `GET /paragliding/api`
