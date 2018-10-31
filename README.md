@@ -135,7 +135,7 @@ Register a webhook which will be notified when new tracks are added to the servi
 ```
 {
 "webhookURL": <url to the webhook>,
-"minTriggerValue": <minimun added tracks before a notification is sent>
+"minTriggerValue": <minimum added tracks before a notification is sent>
 }
 ```
 
