@@ -60,6 +60,7 @@ func (server *Server) tickerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(report)
 }
 
@@ -87,7 +88,7 @@ func (server *Server) tickerAfterHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "internal server error occurred", http.StatusInternalServerError)
 		return
 	}
-
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(report)
 }
 

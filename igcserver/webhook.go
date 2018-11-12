@@ -129,6 +129,7 @@ func (server *Server) webhookGetHandler(w http.ResponseWriter, r *http.Request) 
 		"webhook": webhook,
 	}).Info("responding with info about webhook")
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(webhook)
 }
 
@@ -160,5 +161,6 @@ func (server *Server) webhookDeleteHandler(w http.ResponseWriter, r *http.Reques
 		"webhook": webhook,
 	}).Info("responding with info about deleted webhook")
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(webhook)
 }

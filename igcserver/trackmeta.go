@@ -175,6 +175,7 @@ func (server *Server) trackRegHandler(w http.ResponseWriter, r *http.Request) {
 		"trackmeta": trackMeta,
 	}).Info("responding with id of inserted track metadata")
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
 }
 
@@ -196,6 +197,8 @@ func (server *Server) trackGetAllHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	logger.WithField("ids", ids).Info("responding to request with all ids")
+
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(ids)
 }
 
@@ -228,6 +231,8 @@ func (server *Server) trackGetHandler(w http.ResponseWriter, r *http.Request) {
 	logger.WithFields(log.Fields{
 		"trackmeta": meta,
 	}).Info("responding with track meta for given id")
+
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(meta)
 }
 

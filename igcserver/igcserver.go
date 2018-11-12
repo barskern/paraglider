@@ -111,5 +111,6 @@ func (server *Server) metaHandler(w http.ResponseWriter, r *http.Request) {
 	logger.WithFields(log.Fields(metadata)).Info("responding with metadata")
 
 	// Encode metadata as a JSON object
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(metadata)
 }
